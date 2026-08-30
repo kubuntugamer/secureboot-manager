@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>600</height>
+    <height>467</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -31,6 +31,11 @@
     <item>
      <property name="text">
       <string>Sign Binaries</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Key Generation</string>
      </property>
     </item>
    </widget>

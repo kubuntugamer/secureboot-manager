@@ -1,0 +1,12 @@
+secureboot-manager (0.1.0-0ubuntu2) noble; urgency=low
+
+  * Fixed missing Qt6 build dependencies on remote compilation farm.
+
+ -- chazz <chasbigham@gmail.com>  Sun, 30 Aug 2026 15:35:00 -0500
+
+secureboot-manager (0.1.0-0ubuntu1) noble; urgency=low
+
+  * Initial prototype release.
+  * Core layout UI configuration workspace.
+
+ -- chazz <chasbigham@gmail.com>  Sun, 30 Aug 2026 14:55:00 -0500
