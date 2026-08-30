@@ -1,3 +1,9 @@
+secureboot-manager (0.1.0-0ubuntu4) noble; urgency=low
+
+  * Explicitly included qt6-tools-dev-tools to clear missing Qt6LinguistTools CMake bindings.
+
+ -- chazz <chasbigham@gmail.com>  Sun, 30 Aug 2026 16:25:00 -0500
+
 secureboot-manager (0.1.0-0ubuntu3) noble; urgency=low
 
   * Adjusted CMake minimum required Qt6 version down to 6.4 for Ubuntu Noble compliance.
