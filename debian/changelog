@@ -1,3 +1,9 @@
+secureboot-manager (0.1.0-0ubuntu5) noble; urgency=low
+
+  * Synchronized CMake project targets to secureboot-manager and purged empty translation files.
+
+ -- chazz <chasbigham@gmail.com>  Sun, 30 Aug 2026 16:35:00 -0500
+
 secureboot-manager (0.1.0-0ubuntu4) noble; urgency=low
 
   * Explicitly included qt6-tools-dev-tools to clear missing Qt6LinguistTools CMake bindings.
