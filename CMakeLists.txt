@@ -1,24 +1,19 @@
 cmake_minimum_required(VERSION 3.19)
-project(untitled LANGUAGES CXX)
+project(secureboot-manager LANGUAGES CXX)
 
-find_package(Qt6 6.4 REQUIRED COMPONENTS Core Widgets LinguistTools)
+find_package(Qt6 6.4 REQUIRED COMPONENTS Core Widgets)
 
 qt_standard_project_setup()
 
-qt_add_executable(untitled
-    WIN32 MACOSX_BUNDLE
+# Declare the proper matching executable binary name target
+qt_add_executable(secureboot-manager
     main.cpp
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui
 )
 
-qt_add_translations(
-    TARGETS untitled
-    TS_FILES untitled_en_US.ts
-)
-
-target_link_libraries(untitled
+target_link_libraries(secureboot-manager
     PRIVATE
         Qt::Core
         Qt::Widgets
@@ -26,15 +21,8 @@ target_link_libraries(untitled
 
 include(GNUInstallDirs)
 
-install(TARGETS untitled
-    BUNDLE  DESTINATION .
+# Install location rules matching standard Debian setups
+install(TARGETS secureboot-manager
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
-
-qt_generate_deploy_app_script(
-    TARGET untitled
-    OUTPUT_SCRIPT deploy_script
-    NO_UNSUPPORTED_PLATFORM_ERROR
-)
-install(SCRIPT ${deploy_script})
