@@ -34,7 +34,7 @@ sudo apt install build-essential cmake qt6-base-dev qt6-tools-dev qt6-l10n-tools
 Clone the project files down to your local directory sandbox:
 
 ```bash
-git clone https://github.com
+git clone https://github.com/kubuntugamer/secureboot-manager.git
 cd secureboot-manager
 ```
 
