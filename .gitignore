@@ -1,0 +1,24 @@
+# CMake temporary files and directories
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+
+# Qt Creator specific files and build directories
+*.user
+*.user.*
+build/
+build-*/
+.qtc_clangd/
+
+# Core binary files
+*.o
+*.a
+*.so
+untitled
+secureboot-manager
