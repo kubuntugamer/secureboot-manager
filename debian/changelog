@@ -1,3 +1,10 @@
+secureboot-manager (0.1.0-0ubuntu6) resolute; urgency=low
+
+  * Changed target release distribution from noble to resolute.
+  * Re-aligned dependencies for Ubuntu 26.04 environment.
+
+ -- chazz <chasbigham@gmail.com>  Sun, 30 Aug 2026 19:59:00 -0500
+
 secureboot-manager (0.1.0-0ubuntu5) noble; urgency=low
 
   * Synchronized CMake project targets to secureboot-manager and purged empty translation files.
