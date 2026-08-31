@@ -11,7 +11,15 @@ qt_add_executable(secureboot-manager
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui
+    mokkeyentry.h
+    mokuiadapter.h
+    mokuiadapter.cpp
+    mokmockprovider.h
+    mokmockprovider.cpp
+    mokselectiontracker.h
+    mokselectiontracker.cpp
 )
+
 
 target_link_libraries(secureboot-manager
     PRIVATE
