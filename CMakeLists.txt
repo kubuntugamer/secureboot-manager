@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.16)
 project(secureboot-manager LANGUAGES CXX)
 
 find_package(Qt6 6.4 REQUIRED COMPONENTS Core Widgets)
@@ -14,12 +14,11 @@ qt_add_executable(secureboot-manager
     mokkeyentry.h
     mokuiadapter.h
     mokuiadapter.cpp
-    mokmockprovider.h
-    mokmockprovider.cpp
+    mokprovider.h
+    mokprovider.cpp
     mokselectiontracker.h
     mokselectiontracker.cpp
 )
-
 
 target_link_libraries(secureboot-manager
     PRIVATE
