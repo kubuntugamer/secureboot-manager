@@ -5,19 +5,17 @@
 void MokSelectionTracker::initTracking(QTableWidget *table, QTextBrowser *browser, const QVector<MokKeyEntry> &keysCache) {
     if (!table || !browser) return;
 
-    // Use currentItemChanged to perfectly track selections on a data grid table item row!
-    QObject::connect(table, &QTableWidget::currentItemChanged, [table, browser, keysCache](QTableWidgetItem *current, QTableWidgetItem *previous) {
-        Q_UNUSED(previous);
-        if (!current) {
-            browser->clear();
+    // CRITICAL TRACKING UPGRADE: Connect to direct mouse interaction signals (itemClicked)
+    // instead of layout focus movement paths (currentItemChanged). This guarantees updates
+    // while maintaining your professional NoFocus startup style policy.
+    QObject::connect(table, &QTableWidget::itemClicked, [table, browser, keysCache](QTableWidgetItem *item) {
+        if (!item) {
             return;
         }
 
-        int currentRow = table->row(current);
+        int currentRow = table->row(item);
         if (currentRow >= 0 && currentRow < keysCache.size()) {
             browser->setPlainText(keysCache[currentRow].rawCertificate);
-        } else {
-            browser->clear();
         }
     });
 }

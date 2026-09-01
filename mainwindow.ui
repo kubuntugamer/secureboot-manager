@@ -14,113 +14,130 @@
    <string>KDE Secure Boot Manager</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QListWidget" name="listWidget">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>11</y>
-      <width>211</width>
-      <height>81</height>
-     </rect>
+   <layout class="QHBoxLayout" name="mainHorizontalLayout">
+    <property name="spacing">
+     <number>10</number>
     </property>
-    <property name="focusPolicy">
-     <enum>Qt::FocusPolicy::NoFocus</enum>
+    <property name="leftMargin">
+     <number>10</number>
     </property>
-    <property name="editTriggers">
-     <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+    <property name="topMargin">
+     <number>10</number>
     </property>
-    <property name="itemAlignment">
-     <set>Qt::AlignmentFlag::AlignCenter</set>
+    <property name="rightMargin">
+     <number>10</number>
+    </property>
+    <property name="bottomMargin">
+     <number>10</number>
     </property>
     <item>
-     <property name="text">
-      <string>Enrolled MOK Keys</string>
-     </property>
-     <property name="textAlignment">
-      <set>AlignCenter</set>
-     </property>
-    </item>
-    <item>
-     <property name="text">
-      <string>Key Generation</string>
-     </property>
-     <property name="textAlignment">
-      <set>AlignCenter</set>
-     </property>
-    </item>
-    <item>
-     <property name="text">
-      <string>Sign Binaries</string>
-     </property>
-     <property name="textAlignment">
-      <set>AlignCenter</set>
-     </property>
-    </item>
-   </widget>
-   <widget class="QStackedWidget" name="stackedWidget">
-    <property name="geometry">
-     <rect>
-      <x>230</x>
-      <y>10</y>
-      <width>711</width>
-      <height>531</height>
-     </rect>
-    </property>
-    <property name="currentIndex">
-     <number>0</number>
-    </property>
-    <widget class="QWidget" name="page_enrolled_keys&#10;">
-     <widget class="QTableWidget" name="table_enrolled_keys&#10;">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>711</width>
-        <height>531</height>
-       </rect>
+     <layout class="QVBoxLayout" name="sidebarLayout">
+      <property name="spacing">
+       <number>10</number>
       </property>
-      <attribute name="horizontalHeaderDefaultSectionSize">
-       <number>175</number>
-      </attribute>
-      <attribute name="horizontalHeaderStretchLastSection">
-       <bool>true</bool>
-      </attribute>
-      <column>
-       <property name="text">
-        <string>Common Name (CN)</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>Expiration Date</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>Serial Number</string>
-       </property>
-      </column>
+      <item>
+       <widget class="QListWidget" name="listWidget">
+        <property name="maximumSize">
+         <size>
+          <width>220</width>
+          <height>100</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::NoFocus</enum>
+        </property>
+        <item>
+         <property name="text">
+          <string>Enrolled MOK Keys</string>
+         </property>
+         <property name="textAlignment">
+          <set>AlignCenter</set>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Key Generation</string>
+         </property>
+         <property name="textAlignment">
+          <set>AlignCenter</set>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Sign Binaries</string>
+         </property>
+         <property name="textAlignment">
+          <set>AlignCenter</set>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
+       <widget class="QTextBrowser" name="text_raw_certificate_">
+        <property name="maximumSize">
+         <size>
+          <width>220</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <family>Monospace</family>
+          <pointsize>8</pointsize>
+         </font>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QStackedWidget" name="stackedWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="page_enrolled_keys">
+       <layout class="QVBoxLayout" name="page1Layout">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QTableWidget" name="table_enrolled_keys_">
+          <attribute name="horizontalHeaderStretchLastSection">
+           <bool>true</bool>
+          </attribute>
+          <column>
+           <property name="text">
+            <string>Common Name (CN)</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Expiration Date</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Serial Number</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="page_generate_keys"/>
+      <widget class="QWidget" name="page_sign_binaries"/>
      </widget>
-    </widget>
-    <widget class="QWidget" name="page_sign_binaries"/>
-    <widget class="QWidget" name="page_generate_keys"/>
-   </widget>
-   <widget class="QTextBrowser" name="text_raw_certificate&#10;">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>101</y>
-      <width>211</width>
-      <height>441</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <family>Monospace</family>
-      <pointsize>8</pointsize>
-     </font>
-    </property>
-   </widget>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

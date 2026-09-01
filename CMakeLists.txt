@@ -5,7 +5,7 @@ find_package(Qt6 6.4 REQUIRED COMPONENTS Core Widgets)
 
 qt_standard_project_setup()
 
-# Declare the proper matching executable binary name target
+# 🏗️ REGISTER ALL FILE TARGETS TO CLEAR THE UNDEFINED LINKER ERRORS
 qt_add_executable(secureboot-manager
     main.cpp
     mainwindow.cpp
@@ -16,6 +16,10 @@ qt_add_executable(secureboot-manager
     mokuiadapter.cpp
     mokprovider.h
     mokprovider.cpp
+    mokgenerator.h
+    mokgenerator.cpp
+    mokuigenerator.h       # 📥 RE-ADD THE UI GENERATOR HEADER
+    mokuigenerator.cpp     # 📥 RE-ADD THE UI GENERATOR SOURCE CODE
     mokselectiontracker.h
     mokselectiontracker.cpp
 )
@@ -28,7 +32,7 @@ target_link_libraries(secureboot-manager
 
 include(GNUInstallDirs)
 
-# Install location rules matching standard Debian setups
+# Install rules matching standard Ubuntu/Debian paths
 install(TARGETS secureboot-manager
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

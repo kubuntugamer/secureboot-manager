@@ -1,3 +1,11 @@
+secureboot-manager (0.1.0-0ubuntu7) resolute; urgency=low
+
+  * Integrated live rootless NVRAM data query engine using QProcess.
+  * Replaced temporary mock data provider with native mokutil parsing layers.
+  * Standardized main table column boundaries and automated selection tracker.
+
+ -- chazz <chasbigham@gmail.com>  Mon, 31 Aug 2026 17:30:00 -0500
+
 secureboot-manager (0.1.0-0ubuntu6) resolute; urgency=low
 
   * Changed target release distribution from noble to resolute.
