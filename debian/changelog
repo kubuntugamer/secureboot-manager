@@ -1,3 +1,12 @@
+secureboot-manager (0.1.0-8) resolute; urgency=medium
+
+  * Drop invalid base copy-constructor assignment in mainwindow.cpp.
+  * Re-architect MainWindow layout logic to preserve info panel bounds.
+  * Connect MokSelectionTracker to itemClicked to bypass NoFocus limits.
+  * Add isolated contextual HTML quick-start frames for view indexes.
+
+ -- chazz <chasbigham@gmail.com> Mon, 31 Aug 2026 20:58:00 -0500
+
 secureboot-manager (0.1.0-0ubuntu7) resolute; urgency=low
 
   * Integrated live rootless NVRAM data query engine using QProcess.
