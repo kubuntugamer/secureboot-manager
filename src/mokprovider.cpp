@@ -1,6 +1,7 @@
 #include "mokprovider.h"
 #include <QProcess>
 #include <QTextStream>
+#include <QDebug>
 
 QVector<MokKeyEntry> MokProvider::getLiveKeys() {
     QVector<MokKeyEntry> liveCache;
@@ -23,14 +24,17 @@ QVector<MokKeyEntry> MokProvider::getLiveKeys() {
     bool parsingKey = false;
     QString currentRawBlock = "";
 
-    // 3. Clean single-pass tokenizer string scanner routine parsing individual parameters
+    // 3. Robust tokenizer loop re-mapped to parse true native mokutil console lines
     while (stream.readLineInto(&line)) {
-        if (line.startsWith("[key ")) {
+        QString trimmedLine = line.trimmed();
+
+        // Each unique UEFI firmware key block always starts with the Fingerprint statement label
+        if (trimmedLine.startsWith("SHA1 Fingerprint:") || trimmedLine.startsWith("SHA-1 Fingerprint:")) {
             if (parsingKey) {
                 currentKey.rawCertificate = currentRawBlock.trimmed();
                 liveCache.append(currentKey);
             }
-            // Reset cache fields for next key tracking cycle
+            // Initialize fresh cache values for the newly discovered hardware index row entry
             currentKey = MokKeyEntry();
             currentKey.commonName = "Unknown Certificate Owner";
             currentKey.expirationDate = "N/A";
@@ -40,34 +44,52 @@ QVector<MokKeyEntry> MokProvider::getLiveKeys() {
         } else if (parsingKey) {
             currentRawBlock += line + "\n";
 
-            // Extract Common Name from Issuer/Subject lines
-            if (line.contains("Issuer:") && line.contains("CN=")) {
-                int cnStart = line.indexOf("CN=") + 3;
-                int cnEnd = line.indexOf(",", cnStart);
+            // Parse identity label text fields using Subj/Issuer constraints natively
+            if ((trimmedLine.contains("Subj:") || trimmedLine.contains("Issuer:")) && trimmedLine.contains("CN=")) {
+                int cnStart = trimmedLine.indexOf("CN=") + 3;
+                int cnEnd = trimmedLine.indexOf(",", cnStart);
+
+                // If there are no trailing organizational commas, slice to the absolute end of the string
                 if (cnEnd == -1) {
-                    currentKey.commonName = line.mid(cnStart).trimmed();
+                    currentKey.commonName = trimmedLine.mid(cnStart).trimmed();
                 } else {
-                    currentKey.commonName = line.mid(cnStart, cnEnd - cnStart).trimmed();
+                    currentKey.commonName = trimmedLine.mid(cnStart, cnEnd - cnStart).trimmed();
+                }
+
+                // Clean off any lingering raw formatting escape characters if present
+                if (currentKey.commonName.startsWith('"') && currentKey.commonName.endsWith('"')) {
+                    currentKey.commonName = currentKey.commonName.mid(1, currentKey.commonName.length() - 2);
                 }
             }
-            // Isolate validity dates
-            else if (line.contains("Not After :")) {
-                currentKey.expirationDate = line.split("Not After :").last().trimmed();
+            // 🛠️ FIXED TIMESTAMP SLICER: Slice cleanly right after the first header colon mapping matching index
+            else if (trimmedLine.contains("Not After :") || trimmedLine.contains("Not After:")) {
+                int sepIndex = trimmedLine.indexOf(":");
+                if (sepIndex != -1) {
+                    currentKey.expirationDate = trimmedLine.mid(sepIndex + 1).trimmed();
+                }
             }
-            // Extract the Hex string Serial Identification line variables
-            else if (line.contains("Serial Number:")) {
-                stream.readLineInto(&line);
-                currentRawBlock += line + "\n";
-                currentKey.serialNumber = line.trimmed();
+            // Capture serial number listings safely
+            else if (trimmedLine.contains("Serial Number:") || trimmedLine.contains("Serial:")) {
+                int sepIndex = trimmedLine.indexOf(":");
+                QString potentialSerial = trimmedLine.mid(sepIndex + 1).trimmed();
+
+                if (!potentialSerial.isEmpty()) {
+                    currentKey.serialNumber = potentialSerial;
+                } else {
+                    stream.readLineInto(&line);
+                    currentRawBlock += line + "\n";
+                    currentKey.serialNumber = line.trimmed();
+                }
             }
         }
     }
 
-    // Append the final token bracket block resting inside the parser stream registers
+    // Append the final token bracket block resting inside the parser stream registers safely
     if (parsingKey) {
         currentKey.rawCertificate = currentRawBlock.trimmed();
         liveCache.append(currentKey);
     }
 
+    qDebug() << "📊 MokProvider parsed live firmware keys count:" << liveCache.size();
     return liveCache;
 }

@@ -11,19 +11,12 @@
 #include <QProcess>
 #include <QApplication>
 #include <QMessageBox>
+#include <QTextBrowser>
 
 MokSignerPage::MokSignerPage(QWidget *parent) : QWidget(parent)
 {
-    MokUiSigner::setupSigningPage(this,
-                                  editSignTargetPath,
-                                  editSignKeyPath,
-                                  btnBrowseBinary,
-                                  btnExecuteSignature,
-                                  QStringList(),
-                                  QStringList(),
-                                  QStringList());
-    setupExecutionHook();
-
+    // 🛠️ NO MORE GHOST BARS: Removed the placeholder setup call that loaded empty lists on boot.
+    // The panel now initializes clean and draws perfectly once the discovery backend completes.
     if (QFile::exists("/usr/bin/dpkg-query")) {
         discoveryEngine = new DebianDiscoveryEngine(this);
     } else {
@@ -77,12 +70,18 @@ void MokSignerPage::setupExecutionHook()
             return;
         }
 
+        QTextBrowser *logTerminal = this->findChild<QTextBrowser*>("signerLogTerminal");
+        if (logTerminal) {
+            logTerminal->clear();
+            logTerminal->append("🚀 [SYSTEM INIT]: Launching asynchronous Secure Boot signing pipeline...");
+            logTerminal->append(QString("📂 [TARGET BINARY]: %1").arg(targetBinary));
+        }
+
         QString fullyResolvedKey = keyAsset;
         if (fullyResolvedKey.startsWith("~")) {
             fullyResolvedKey.replace(0, 1, QDir::homePath());
         }
 
-        // 🛠️ FIXED EXTENSION RE-MAPPER: Safely maps your public certificate pointer targets straight to MOK.pem
         QString certAsset = fullyResolvedKey;
         if (certAsset.endsWith(".priv")) {
             certAsset.replace(".priv", ".pem");
@@ -96,7 +95,6 @@ void MokSignerPage::setupExecutionHook()
             kernelVersion = kernelVersion.mid(8);
         }
 
-        // 🔄 VISUAL PROGRESS INDICATOR: Lock down the interface and switch button to active execution state
         btnExecuteSignature->setEnabled(false);
         btnExecuteSignature->setText("⏳ Injecting Cryptographic Secure Boot Signatures... Please Wait.");
         btnExecuteSignature->setStyleSheet(
@@ -105,28 +103,46 @@ void MokSignerPage::setupExecutionHook()
             "  font-weight: bold; padding: 12px; border-radius: 4px; font-size: 11px;"
             "}"
         );
-        qApp->processEvents(); // Force layout refresh to reflect state immediately
+        qApp->processEvents();
 
         QProcess *sbSignWorker = new QProcess(qApp);
         QString modulesPath = QString("/lib/modules/%1").arg(kernelVersion);
         QDir modulesDir(modulesPath);
 
+        if (logTerminal) {
+            logTerminal->append(QString("🔑 [KEY RESOLVED]: %1").arg(fullyResolvedKey));
+            logTerminal->append(QString("📜 [CERT RESOLVED]: %1").arg(certAsset));
+        }
+
         QString scriptPayload = QString(
-            "sbsign --key '%1' --cert '%2' --output '%3' '%4'"
+            "echo '📡 [KERNEL]: Injecting signature headers directly into binary core...'; sbsign --key '%1' --cert '%2' --output '%3' '%4'"
         ).arg(fullyResolvedKey, certAsset, targetBinary, targetBinary);
 
         if (modulesDir.exists()) {
             scriptPayload += QString(
-                " && find '%1' -type f \\( -name '*.ko' -o -name '*.ko.xz' -o -name '*.ko.zst' \\) "
-                "-exec sbsign --key '%2' --cert '%3' --output {} {} \\;"
+                " && echo '📡 [MODULES]: Traversing driver module listings inside %1...';"
+                " find '%1' -type f \\( -name '*.ko' -o -name '*.ko.xz' -o -name '*.ko.zst' \\) "
+                "-exec sh -c 'echo \"✍️ [SIGNING MODULE]: {}\" && sbsign --key \"%2\" --cert \"%3\" --output \"{}\" \"{}\"' \\;"
             ).arg(modulesPath, fullyResolvedKey, certAsset);
         }
 
-        connect(sbSignWorker, &QProcess::finished, qApp, [this, sbSignWorker](int exitCode, QProcess::ExitStatus status) {
-            QString errorDetails = QString::fromUtf8(sbSignWorker->readAllStandardError()).trimmed();
-            QString standardDetails = QString::fromUtf8(sbSignWorker->readAllStandardOutput()).trimmed();
+        connect(sbSignWorker, &QProcess::readyReadStandardOutput, qApp, [sbSignWorker, logTerminal]() {
+            if (!logTerminal) return;
+            QString stdOutputLines = QString::fromUtf8(sbSignWorker->readAllStandardOutput()).trimmed();
+            if (!stdOutputLines.isEmpty()) {
+                logTerminal->append(stdOutputLines);
+            }
+        });
 
-            // 🔄 VISUAL RESTORATION: Re-enable the layout button immediately upon worker thread termination
+        connect(sbSignWorker, &QProcess::readyReadStandardError, qApp, [sbSignWorker, logTerminal]() {
+            if (!logTerminal) return;
+            QString errOutputLines = QString::fromUtf8(sbSignWorker->readAllStandardError()).trimmed();
+            if (!errOutputLines.isEmpty()) {
+                logTerminal->append("<font color='#e74c3c'>⚠️ [SHELL ERROR]: " + errOutputLines + "</font>");
+            }
+        });
+
+        connect(sbSignWorker, &QProcess::finished, qApp, [this, sbSignWorker, logTerminal](int exitCode, QProcess::ExitStatus status) {
             if (btnExecuteSignature) {
                 btnExecuteSignature->setEnabled(true);
                 btnExecuteSignature->setText("Inject Secure Boot Signature");
@@ -140,14 +156,15 @@ void MokSignerPage::setupExecutionHook()
             }
 
             if (status == QProcess::NormalExit && exitCode == 0) {
-                QMessageBox::information(this, "Signing Successful",
-                                         QString("Secure Boot signatures successfully injected into:\n\n📌 %1\n\nAll linked kernel modules have been validated.").arg(this->property("selectedKernelPath").toString()));
+                if (logTerminal) {
+                    logTerminal->append("<font color='#1dd1a1'>✨ [SUCCESS]: Secure Boot signature injection finished with code 0! Repainting dashboard grid...</font>");
+                }
+                QMessageBox::information(this, "Signing Successful", "Secure Boot signatures successfully injected into your kernel assets.");
             } else {
-                QString errorMsg = errorDetails.isEmpty() ? standardDetails : errorDetails;
-                if (errorMsg.isEmpty()) errorMsg = "System privilege token rejected or command terminated by user.";
-
-                QMessageBox::critical(this, "Signing Injection Failed",
-                                      "The sbsign execution loop returned an error wrapper:\n\n" + errorMsg);
+                if (logTerminal) {
+                    logTerminal->append("<font color='#e74c3c'>❌ [FATAL ERROR]: The execution subshell rolled back mid-process.</font>");
+                }
+                QMessageBox::critical(this, "Signing Injection Failed", "The sbsign execution loop returned an unhandled terminal error.");
             }
 
             if (this && this->isVisible()) {
