@@ -1,0 +1,6 @@
+<!DOCTYPE RCC><RCC version="1.0">
+    <qresource prefix="/">
+        <!-- 🔍 Map the actual JPEG image asset inside the virtual resource tree -->
+        <file>assets/kdesbm_logo.jpeg</file>
+    </qresource>
+</RCC>

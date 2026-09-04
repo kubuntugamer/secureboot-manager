@@ -5,6 +5,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QFileDialog>
 
 void MokUiSigner::setupSigningPage(QWidget *pageContainer, QLineEdit *&targetPathEdit, QLineEdit *&keyPathEdit, QPushButton *&browseBinaryBtn, QPushButton *&executeSignBtn)
 {
@@ -14,7 +15,6 @@ void MokUiSigner::setupSigningPage(QWidget *pageContainer, QLineEdit *&targetPat
     mainLayout->setContentsMargins(30, 25, 30, 25);
     mainLayout->setSpacing(15);
 
-    // Page Section Title Headers
     QLabel *titleLabel = new QLabel("Automated Secure Boot Protection & Injections", pageContainer);
     titleLabel->setStyleSheet("font-size: 16px; font-weight: bold; color: #ffffff;");
     mainLayout->addWidget(titleLabel);
@@ -26,7 +26,6 @@ void MokUiSigner::setupSigningPage(QWidget *pageContainer, QLineEdit *&targetPat
 
     mainLayout->addSpacing(10);
 
-    // AUTOMATION HOOK CONFIGURATION REGION
     QLabel *autoHeader = new QLabel("Kernel Update Automation Guard Configuration:", pageContainer);
     autoHeader->setStyleSheet("font-size: 11px; font-weight: bold; color: #ffffff;");
     mainLayout->addWidget(autoHeader);
@@ -39,7 +38,6 @@ void MokUiSigner::setupSigningPage(QWidget *pageContainer, QLineEdit *&targetPat
     mainLayout->addWidget(new QLabel("<hr style='border: 0; border-top: 1px solid #3f4142;'>", pageContainer));
     mainLayout->addSpacing(5);
 
-    // MANUAL BACKUP INJECTION REGION
     QLabel *manualHeader = new QLabel("Manual Single-Item Cryptographic Injections:", pageContainer);
     manualHeader->setStyleSheet("font-size: 11px; font-weight: bold; color: #e67e22;");
     mainLayout->addWidget(manualHeader);
@@ -66,4 +64,16 @@ void MokUiSigner::setupSigningPage(QWidget *pageContainer, QLineEdit *&targetPat
     mainLayout->addWidget(executeSignBtn);
 
     mainLayout->addStretch();
+
+    // 🔒 OOP Encapsulation: The signing browse button logic is contained cleanly right here
+    QObject::connect(browseBinaryBtn, &QPushButton::clicked, pageContainer, [targetPathEdit, pageContainer]() {
+        QString targetFile = QFileDialog::getOpenFileName(pageContainer, "Select File to Sign", "/lib/modules", "Kernel Modules (*.ko);;Images (vmlinuz);;All Files (*)");
+        if (!targetFile.isEmpty()) {
+            targetPathEdit->setText(targetFile);
+        }
+    });
+
+    QObject::connect(executeSignBtn, &QPushButton::clicked, pageContainer, []() {
+        // Reserved for standalone validation scripting execution parameters
+    });
 }

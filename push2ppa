@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+
+# 🛡️ SYSTEM VARIABLES CONFIGURATION
+PPA_ADDRESS="ppa:chasbigham/ubuntu/secureboot-manager"
+MAINTAINER_IDENTITY="chazz <chasbigham@gmail.com>"
+DEBIAN_DIST="resolute"
+
+# Visual layout feedback helpers
+info()  { echo -e "\e[34m[INFO]\e[0m $1"; }
+warn()  { echo -e "\e[33m[WARN]\e[0m $1"; }
+error() { echo -e "\e[31m[ERROR]\e[0m $1"; exit 1; }
+
+# 🚀 STEP 1: PRE-FLIGHT BOUNDARY AUDIT
+info "Initializing source verification audit..."
+
+if [ ! -d "debian" ]; then
+    error "Execution Intercept: Directory 'debian/' not found. Ensure you run this script inside the root source tree."
+fi
+
+# Force structural format path compliance
+if [ ! -f "debian/source/format" ]; then
+    warn "'debian/source/format' is missing. Injecting modern packaging parameters..."
+    mkdir -p debian/source
+    echo "3.0 (quilt)" > debian/source/format
+fi
+
+# Enforce rules executable layout permissions
+if [ -f "debian/rules" ] && [ ! -x "debian/rules" ]; then
+    warn "Fixing execution permissions on 'debian/rules'..."
+    chmod +x debian/rules
+fi
+
+# 📝 STEP 2: INCREMENT THE DEBIAN CHANGELOG
+info "Modifying changelog version layer..."
+if command -v dch &> /dev/null; then
+    # Spawns a prompt to type the new version logs while pinning your explicit PPA identity
+    dch --distribution "$DEBIAN_DIST" --mainttrailer "$MAINTAINER_IDENTITY" -i
+else
+    warn "'devscripts' package not detected. Skipping automatic version bump. Modifying manual checks..."
+fi
+
+# 🧼 STEP 3: WORKSPACE CLEANUP
+info "Scrubbing temporary local files and artifacts..."
+if [ -f "debian/files" ]; then
+    rm -f debian/files
+fi
+debuild --clean &> /dev/null || warn "Clean routine dropped an indicator. Proceeding to compilation payload..."
+
+# 📦 STEP 4: COMPILE SOURCE PACKAGE STRUCTURE
+info "Building source tracking bundle (bypassing local binary builds)..."
+# -S: Source-only build for PPA ingestion
+# -us -uc: Suppresses basic debuild signing loops to let debsign target keys cleanly
+# -I.qtcreator: 🔍 Added to ignore local IDE configurations so debuild doesn't throw a fatal error
+debuild -S -us -uc -I.qtcreator
+
+if [ $? -ne 0 ]; then
+    error "Compilation Phase Failure: 'debuild' was unable to form the source source package structures."
+fi
+
+# 🔐 STEP 5: AUTOMATED CRYPTOGRAPHIC SIGNING
+info "Locating source tracking manifests for GPG signing..."
+# Move one directory up where debuild drops output artifacts
+cd ..
+
+# Auto-locate the fresh source package manifest file
+CHANGES_FILE=$(ls -t secureboot-manager_*_source.changes 2>/dev/null | head -n 1)
+
+if [ -z "$CHANGES_FILE" ]; then
+    error "Identity Error: Unable to locate a valid generated '.changes' output file in parent directory."
+fi
+
+info "Signing package layer using file target: ${CHANGES_FILE}"
+# Leverages your passwordless gpg-agent layout cache configuration automatically
+debsign -m"$MAINTAINER_IDENTITY" "$CHANGES_FILE"
+
+if [ $? -ne 0 ]; then
+    error "Cryptographic Intercept: GPG signing process failed. Verify your key state."
+fi
+
+# 🚀 STEP 6: DIRECT PPA DISTRIBUTION
+info "Pushing signed source artifacts straight to Launchpad queue..."
+dput "$PPA_ADDRESS" "$CHANGES_FILE"
+
+if [ $? -eq 0 ]; then
+    echo -e "\n======================================================="
+    echo -e "🏁 \e[32mUPLOAD PIPELINE EXECUTION SUCCESSFUL!\e[0m"
+    echo -e "🔹 Target Manifest: ${CHANGES_FILE}"
+    echo -e "======================================================="
+else
+    error "Transmission Error: 'dput' dropped connection or transaction rejected by Launchpad."
+fi

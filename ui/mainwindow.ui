@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>950</width>
-    <height>600</height>
+    <width>1100</width>
+    <height>700</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -37,10 +37,11 @@
       </property>
       <item>
        <widget class="QListWidget" name="listWidget">
+        <!-- 📐 RESTORED MAX SIZE: Returned to original 116 height boundaries -->
         <property name="maximumSize">
          <size>
           <width>220</width>
-          <height>100</height>
+          <height>116</height>
          </size>
         </property>
         <property name="focusPolicy">
@@ -144,7 +145,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>950</width>
+     <width>1100</width>
      <height>23</height>
     </rect>
    </property>

@@ -1,3 +1,9 @@
+secureboot-manager (0.1.0-9ubuntu2) resolute; urgency=medium
+
+  * chazz <chasbigham@gmail.com>
+
+ -- chazz <chazz@hp17cp2xxx>  Thu, 03 Sep 2026 17:20:44 -0500
+
 secureboot-manager (0.1.0-9ubuntu1) resolute; urgency=medium
 
   * bring source code submissions into compliance with launchpad ppa policy
