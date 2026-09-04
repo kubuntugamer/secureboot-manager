@@ -23,7 +23,7 @@ qt_add_executable(secureboot-manager
     ${CMAKE_CURRENT_SOURCE_DIR}/include/mokgeneratorpage.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/mokgeneratorpage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/moksignerpage.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ui/moksignerpage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/moksignerpage.cpp         # 💎 TARGETING YOUR ACTIVE SRC/ UPDATED FILE COPY HERE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/mokaboutdialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/mokaboutdialog.cpp
 
@@ -47,6 +47,16 @@ qt_add_executable(secureboot-manager
     # 📦 New Dedicated Diagnostics Interface Submodule
     ${CMAKE_CURRENT_SOURCE_DIR}/include/mokdashboardconsole.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/mokdashboardconsole.cpp
+
+    # 🔌 Plug-and-Play Extensible Kernel Discovery Engine Strategy
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/abstractdiscoveryengine.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/debiandiscoveryengine.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/debiandiscoveryengine.cpp
+
+    # 🚨 Freestanding Enrollment Failsafe & Blockade Overlay Modules
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/mokenrollmentwizard.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokenrollmentwizard.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokhijackoverlay.cpp
 )
 
 target_link_libraries(secureboot-manager

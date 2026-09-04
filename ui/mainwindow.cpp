@@ -6,7 +6,7 @@
 #include "mokaboutdialog.h"
 #include "mokselectiontracker.h"
 #include "mokprovider.h"
-#include "mokdashboardconsole.h" // 📦 Dedicated console layout engine
+#include "mokdashboardconsole.h"
 #include <QHeaderView>
 #include <QTableWidget>
 
@@ -14,65 +14,99 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 {
     ui->setupUi(this);
 
-    // 📐 DIMENSION RESTORATION: Locked tightly to your production layout standards
+    // 🎨 The Head Chef calls the four sous-chefs to action
+    setupWindowProperties();
+    setupNavigationSidebar();
+    initializePageStack();
+    setupNavigationController();
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+void MainWindow::setupWindowProperties()
+{
+    // Sets the physical size layout standard to 1100x700
     this->setFixedSize(1100, 700);
 
-    // 🛡️ WINDOW ICON INJECTION: Overrides the Wayland compositor fallback graphic with your custom look
-    // Attempts to load your custom logo path, falls back to a system-wide secure token icon if missing
+    // Injects the custom security shield graphic into the window frame
     QIcon appIcon(":/images/shield.png");
     if (appIcon.isNull()) {
         appIcon = QIcon::fromTheme("security-high", QIcon::fromTheme("password-manager"));
     }
     this->setWindowIcon(appIcon);
+}
 
-    // 🎨 NAV BALANCE: Scaled down from 22x22 to 18x18 to reclaim vertical runway for bottom spacing
+void MainWindow::setupNavigationSidebar()
+{
+    // Scales sidebar icons nicely and hides the ugly scrollbars
     ui->listWidget->setIconSize(QSize(18, 18));
-
-    // 🚫 SCROLLBAR FORCE BARRIER: Explicitly override and block scrollbar injection policies
     ui->listWidget->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     ui->listWidget->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    // 🛠️ SUBMODULE ENGINE INTERACTION: Delegate console styling and boot briefs out of this file
-    dashboardConsole = new MokDashboardConsole(ui->text_raw_certificate_, this);
-    dashboardConsole->renderStartupBrief();
-
-    // 🧼 Purge static visual designer placeholders from the main right canvas stack view
-    while (ui->stackedWidget->count() > 0) {
-        ui->stackedWidget->removeWidget(ui->stackedWidget->widget(0));
-    }
-
-    // 🗺️ THE ROADMAP: Host your dynamic, adaptive department widgets natively inside the clean stack
-    MokLedgerPage *ledgerPage = new MokLedgerPage(this);
-    ui->stackedWidget->addWidget(ledgerPage);
-    ui->stackedWidget->addWidget(new MokGeneratorPage(this));
-    ui->stackedWidget->addWidget(new MokSignerPage(this));
-    ui->stackedWidget->setCurrentIndex(0);
-
-    // 📐 GRID BALANCE: Enforce column layout rules without letting strings clip out of bounds
-    QTableWidget *table = ledgerPage->getTableWidget();
-    if (table && table->horizontalHeader()) {
-        table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-        table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Interactive);
-        table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
-    }
-
-    // 🎯 SIDEBAR LINKING HOOK: Route row selection event messages back up to the left sidebar display panel
-    QVector<MokKeyEntry> activeKeys = MokProvider::getLiveKeys();
-    MokSelectionTracker::initTracking(ledgerPage->getTableWidget(), ui->text_raw_certificate_, activeKeys);
-
-    // 🎨 SYSTEM THEME MAP: Bind uniform desktop iconography directly to your sidebar items
+    // Maps out default icons to your left menu elements
     if (ui->listWidget->count() >= 3) {
         ui->listWidget->item(0)->setIcon(QIcon::fromTheme("view-list-details"));
         ui->listWidget->item(1)->setIcon(QIcon::fromTheme("configure"));
         ui->listWidget->item(2)->setIcon(QIcon::fromTheme("accessories-text-editor"));
     }
 
-    // ➕ THE FOOTER: Append the About item. Reclaimed runway creates a natural padding gap below this text.
+    // Appends the clean "About Manager" item to the bottom row
     QListWidgetItem *aboutItem = new QListWidgetItem(QIcon::fromTheme("help-about"), "About Manager");
     aboutItem->setTextAlignment(Qt::AlignCenter);
     ui->listWidget->addItem(aboutItem);
+}
 
-    // 🕹️ NAVIGATION CONTROLLER: Connect panel index selection directly to the stacked window views
+void MainWindow::initializePageStack()
+{
+    // Wires up the dashboard side panel display
+    dashboardConsole = new MokDashboardConsole(ui->text_raw_certificate_, this);
+    dashboardConsole->renderStartupBrief();
+
+    // 🔒 THE HIDE STRATEGY: Safely turn off the original designer placeholder layout views
+    if (ui->page_generate_keys) ui->page_generate_keys->hide();
+    if (ui->page_sign_binaries)  ui->page_sign_binaries->hide();
+
+    // Wipes out any leftover layout indexes inside the stack engine
+    while (ui->stackedWidget->count() > 0) {
+        ui->stackedWidget->removeWidget(ui->stackedWidget->widget(0));
+    }
+
+    // Loads your real workspace modules (Ledger, Builder, Signer panels)
+    MokLedgerPage *ledgerPage = new MokLedgerPage(this);
+    ui->stackedWidget->addWidget(ledgerPage);
+    ui->stackedWidget->addWidget(new MokGeneratorPage(this));
+    ui->stackedWidget->addWidget(new MokSignerPage(this));
+    ui->stackedWidget->setCurrentIndex(0);
+
+    // 📐 FIXED STARTUP GRID STRETCH: Query the central table layout directly to expand its width bounds
+    QTableWidget *table = ui->table_enrolled_keys_;
+    if (!table) {
+        // Fallback check: look for the table nested inside the custom page object
+        table = ledgerPage->getTableWidget();
+    }
+
+    if (table && table->horizontalHeader()) {
+        // Enforce specific layout widths to prevent the "nmon Name (C" string clipping glitch
+        table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Interactive);
+        table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Interactive);
+        table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
+
+        // Give the Common Name column a generous, safe fixed runway width on first load
+        table->setColumnWidth(0, 280);
+        table->setColumnWidth(1, 200);
+    }
+
+    // Links your row selections back into the console information engine
+    QVector<MokKeyEntry> activeKeys = MokProvider::getLiveKeys();
+    MokSelectionTracker::initTracking(table, ui->text_raw_certificate_, activeKeys);
+}
+
+void MainWindow::setupNavigationController()
+{
+    // Listens to your click selections and switches screens instantly
     connect(ui->listWidget, &QListWidget::currentRowChanged, this, [this](int rowIndex) {
         if (rowIndex == 3) {
             ui->listWidget->setCurrentRow(ui->stackedWidget->currentIndex());
@@ -81,10 +115,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
             return;
         }
         ui->stackedWidget->setCurrentIndex(rowIndex);
-    });
-}
 
-MainWindow::~MainWindow()
-{
-    delete ui;
+        // Updates side panel text layouts relative to the active screen index
+        if (rowIndex == 0) {
+            dashboardConsole->renderStartupBrief();
+        } else if (rowIndex == 1) {
+            dashboardConsole->renderGenerationBrief();
+        } else if (rowIndex == 2) {
+            dashboardConsole->renderSigningBrief();
+        }
+    });
 }

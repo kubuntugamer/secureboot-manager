@@ -37,7 +37,6 @@
       </property>
       <item>
        <widget class="QListWidget" name="listWidget">
-        <!-- 📐 RESTORED MAX SIZE: Returned to original 116 height boundaries -->
         <property name="maximumSize">
          <size>
           <width>220</width>
@@ -86,6 +85,21 @@
           <family>Monospace</family>
           <pointsize>8</pointsize>
          </font>
+        </property>
+        <!-- 🎨 STARTUP GRAPHIC INJECTION: Pre-loads Option A directly into the sidebar container panel layout -->
+        <property name="html">
+         <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://w3.org;
+          &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+          p, li { white-space: pre-wrap; }
+          &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Monospace'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
+          &lt;table width=&quot;100%&quot; height=&quot;100%&quot; style=&quot;border-collapse: collapse; background-color: #1e1e24;&quot;&gt;
+          &lt;tr&gt;
+          &lt;td align=&quot;center&quot; valign=&quot;middle&quot; style=&quot;padding: 10px;&quot;&gt;
+          &lt;img src=&quot;:/assets/startup_splash.png&quot; width=&quot;190&quot; height=&quot;254&quot; style=&quot;display: block;&quot;&gt;
+          &lt;/td&gt;
+          &lt;/tr&gt;
+          &lt;/table&gt;
+          &lt;/body&gt;&lt;/html&gt;</string>
         </property>
        </widget>
       </item>

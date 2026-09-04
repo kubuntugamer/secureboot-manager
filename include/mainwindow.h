@@ -7,7 +7,6 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
-// 📦 Forward declaration to keep compilation fast and lean
 class MokDashboardConsole;
 
 class MainWindow : public QMainWindow
@@ -19,8 +18,14 @@ public:
     ~MainWindow();
 
 private:
+    // 🛠️ The Blueprints: We list the names of our four new sous-chef tasks here
+    void setupWindowProperties();
+    void setupNavigationSidebar();
+    void initializePageStack();
+    void setupNavigationController();
+
     Ui::MainWindow *ui;
-    MokDashboardConsole *dashboardConsole; // ➕ Allocated pointer link for the console submodule
+    MokDashboardConsole *dashboardConsole;
 };
 
 #endif // MAINWINDOW_H

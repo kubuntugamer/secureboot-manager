@@ -2,8 +2,9 @@
 #define MOKDASHBOARDCONSOLE_H
 
 #include <QObject>
-#include <QTextEdit>
 #include "mokkeyentry.h"
+
+class QTextEdit;
 
 class MokDashboardConsole : public QObject
 {
@@ -11,10 +12,9 @@ class MokDashboardConsole : public QObject
 public:
     explicit MokDashboardConsole(QTextEdit *displayWidget, QObject *parent = nullptr);
 
-    // 🎨 Renders the colorful prototype status brief on boot
     void renderStartupBrief();
-
-    // 🔬 Formats and prints a selected key's attributes with retro terminal coloring
+    void renderGenerationBrief();
+    void renderSigningBrief(); // ➕ Declare the missing blueprint name right here!
     void updateWithKeyDetails(const MokKeyEntry &key);
 
 private:
