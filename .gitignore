@@ -22,3 +22,8 @@ build-*/
 *.so
 untitled
 secureboot-manager
+build/
+secureboot-manager_autogen/
+CMakeFiles/
+cmake_install.cmake
+Makefile
