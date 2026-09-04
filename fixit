@@ -1,5 +1,0 @@
-# 1. Force CMake to completely re-scan the file registers
-cmake .
-
-# 2. Run a clean build pass to link the new About Dialog file
-make clean && make
