@@ -21,7 +21,7 @@ qt_add_executable(secureboot-manager
     ${CMAKE_CURRENT_SOURCE_DIR}/include/mokledgerpage.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/mokledgerpage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/mokgeneratorpage.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ui/mokgeneratorpage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokgeneratorpage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/moksignerpage.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/moksignerpage.cpp         # 💎 TARGETING YOUR ACTIVE SRC/ UPDATED FILE COPY HERE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/mokaboutdialog.h
