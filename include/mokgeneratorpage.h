@@ -11,14 +11,18 @@ class QTextBrowser;
 class MokGeneratorPage : public QWidget
 {
     Q_OBJECT
+
 public:
     explicit MokGeneratorPage(QWidget *parent = nullptr);
 
+public slots:
+    void executeMokKeyPairGeneration();
+
 private:
-    QLineEdit *editGenCommonName;
-    QSpinBox *spinGenDays;
-    QPushButton *btnGenerateMok;
-    QTextBrowser *textGenerationLog;
+    QLineEdit *editGenCommonName = nullptr;
+    QSpinBox *spinGenDays = nullptr;
+    QPushButton *btnGenerateMok = nullptr;
+    QTextBrowser *textGenerationLog = nullptr;
 };
 
 #endif // MOKGENERATORPAGE_H

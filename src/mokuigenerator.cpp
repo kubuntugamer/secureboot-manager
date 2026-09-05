@@ -8,10 +8,10 @@
 #include <QPushButton>
 #include <QTextBrowser>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QDir>
 #include <QProcess>
 
-// Forward declare custom blockade overlay function
 void launchBlockadeRebootOverlay(QWidget *parent);
 
 void MokUiGenerator::setupGenerationPage(QWidget *pageContainer,
@@ -38,7 +38,7 @@ void MokUiGenerator::setupGenerationPage(QWidget *pageContainer,
     titleLabel->setFont(titleFont);
     masterLayout->addWidget(titleLabel);
 
-    // Common Name Input Layout
+    // Common Name Input
     QVBoxLayout *cnBlock = new QVBoxLayout();
     QLabel *cnLabel = new QLabel("Common Name (CN) / Identity String:", pageContainer);
     commonNameEdit = new QLineEdit(pageContainer);
@@ -48,7 +48,7 @@ void MokUiGenerator::setupGenerationPage(QWidget *pageContainer,
     cnBlock->addWidget(commonNameEdit);
     masterLayout->addLayout(cnBlock);
 
-    // Validity Days Layout
+    // Validity Days Input
     QVBoxLayout *daysBlock = new QVBoxLayout();
     QLabel *daysLabel = new QLabel("Certificate Validity Lifespan (Days):", pageContainer);
     validityDaysSpin = new QSpinBox(pageContainer);
@@ -59,13 +59,23 @@ void MokUiGenerator::setupGenerationPage(QWidget *pageContainer,
     daysBlock->addWidget(validityDaysSpin);
     masterLayout->addLayout(daysBlock);
 
-    // Action button drawn clean and tight without password clutter
+    // Side-by-side Dual Action Buttons
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    buttonLayout->setSpacing(12);
+
     generateBtn = new QPushButton("🛠️ Generate Cryptographic Key Pair", pageContainer);
     generateBtn->setMinimumHeight(40);
     QFont btnFont = generateBtn->font();
     btnFont.setBold(true);
     generateBtn->setFont(btnFont);
-    masterLayout->addWidget(generateBtn);
+
+    QPushButton *revokeBtn = new QPushButton("🗑️ Revoke Delete MOK Key", pageContainer);
+    revokeBtn->setMinimumHeight(40);
+    revokeBtn->setFont(btnFont);
+
+    buttonLayout->addWidget(generateBtn);
+    buttonLayout->addWidget(revokeBtn);
+    masterLayout->addLayout(buttonLayout);
 
     QLabel *logLabel = new QLabel("OpenSSL System Execution Log Terminal:", pageContainer);
     logBrowser = new QTextBrowser(pageContainer);
@@ -78,15 +88,13 @@ void MokUiGenerator::setupGenerationPage(QWidget *pageContainer,
     masterLayout->addWidget(logBrowser);
     masterLayout->setStretchFactor(logBrowser, 1);
 
-    // Binds and manages page generation actions
+    // Generate Action Execution Binding
     QObject::connect(generateBtn, &QPushButton::clicked, pageContainer, [commonNameEdit, validityDaysSpin, logBrowser, pageContainer]() {
         logBrowser->clear();
 
-        // 💎 TARGET YOUR RECOGNIZED SYSTEM LIQUORIX SETTING PATH DIRECTLY FIRST
         QString outputFolder = "/var/lib/shim-signed/mok";
         QString certPath = outputFolder + "/MOK.der";
 
-        // 🔍 STEP 1: RUN PRE-FLIGHT FIRMWARE CHECK IMMEDIATELY BEFORE ANY VALIDATIONS
         bool isAlreadyEnrolled = false;
         if (QFile::exists(certPath)) {
             QProcess checkProcess;
@@ -97,25 +105,21 @@ void MokUiGenerator::setupGenerationPage(QWidget *pageContainer,
             }
         }
 
-        // 🟢 FLOW A: KEY IS ALREADY ENROLLED IN SYSTEM FIRMWARE
         if (isAlreadyEnrolled) {
             logBrowser->append("ℹ️ System Check: This MOK certificate is already trusted and active in your firmware.");
             logBrowser->append("✅ Safe Bypass Active: System security rings verified. No file generation or wizard enrollment is required for this workstation environment.");
-            return; // Exit out of the loop safely! Zero files generated, zero popups thrown.
+            return;
         }
 
-        // 🔴 FLOW B: NEW OR UNTRUSTED KEY WORKFLOW ACTIONS
         QString commonName = commonNameEdit->text().trimmed();
         int validityDays = validityDaysSpin->value();
 
-        // Check fallback dir path if default firmware directory isn't accessible yet
         if (!QDir(outputFolder).exists()) {
             outputFolder = QDir::homePath() + "/secureboot-manager-keys";
             certPath = outputFolder + "/MOK.der";
         }
 
         if (commonName.isEmpty()) {
-            // Apply a placeholder string instead of throwing a disruptive validation dialog message box!
             commonName = "KDE Secure Boot Manager Key";
         }
 
@@ -163,6 +167,25 @@ void MokUiGenerator::setupGenerationPage(QWidget *pageContainer,
 
             mokutilProcess->start("pkexec", QStringList() << "mokutil" << runArgs);
         }
+    });
+
+    // Revoke Action Execution Binding
+    QObject::connect(revokeBtn, &QPushButton::clicked, pageContainer, [logBrowser, pageContainer]() {
+        logBrowser->clear();
+        logBrowser->append("⚠️ Initiating MOK Revocation process...\n");
+
+        QProcess *revokeProcess = new QProcess(pageContainer);
+        QObject::connect(revokeProcess, &QProcess::finished, pageContainer, [revokeProcess, logBrowser, pageContainer](int exitCode, QProcess::ExitStatus status) {
+            if (status == QProcess::NormalExit && exitCode == 0) {
+                logBrowser->append("✨ Success: MOK key revocation request cached into NVRAM storage.");
+                launchBlockadeRebootOverlay(pageContainer);
+            } else {
+                QString errorMsg = QString::fromUtf8(revokeProcess->readAllStandardError());
+                logBrowser->append("❌ Error: Revocation request failed or was cancelled:\n" + errorMsg);
+            }
+            revokeProcess->deleteLater();
+        });
+        revokeProcess->start("pkexec", QStringList() << "mokutil" << "--reset");
     });
 
     pageContainer->updateGeometry();
