@@ -1,3 +1,10 @@
+secureboot-manager (0.1.0-9ubuntu7) resolute; urgency=medium
+
+  * Refactor: Modularize UI signer layouts and completely isolate logic files.
+  * Optimize: Stabilize build parameters and clean up repository file paths.
+
+ -- chazz <chasbigham@gmail.com>  Mon, 07 Sep 2026 04:54:00 -0500
+
 secureboot-manager (0.1.0-9ubuntu6) resolute; urgency=medium
 
   * Release stable C++17 core utility engine, dropping prototype UI
@@ -15,12 +22,7 @@ secureboot-manager (0.1.0-9ubuntu5) resolute; urgency=medium
 
 secureboot-manager (0.1.0-9ubuntu4) resolute; urgency=medium
 
-  * Unify MokGeneratorPage wrapper architecture and restore dual-button
-    UI layout
-  * Unify MokGeneratorPage wrapper architecture and restore dual-button
-    layout
-  * Unify MokGeneratorPage wrapper architecture and restore dual-button
-    layout
+  * Unify MokGeneratorPage wrapper architecture and restore dual-button UI layout.
 
  -- chazz <chasbigham@gmail.com>  Sat, 05 Sep 2026 10:19:39 -0500
 

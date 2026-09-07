@@ -2,11 +2,21 @@ Source: secureboot-manager
 Section: utils
 Priority: optional
 Maintainer: chazz <chasbigham@gmail.com>
-Build-Depends: debhelper-compat (= 13), cmake, qt6-base-dev
+Build-Depends: debhelper-compat (= 13),
+               cmake,
+               qt6-base-dev,
+               qt6-tools-dev,
+               qt6-l10n-tools,
+               libpolkit-qt6-1-dev
 Standards-Version: 4.6.2
+Homepage: https://github.com
 
 Package: secureboot-manager
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, mokutil, openssl
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         mokutil,
+         sbsigntool,
+         openssl
 Description: Secure Boot MOK Key Manager UI
  KDE-focused graphical utility for managing MOK keys and signatures.
