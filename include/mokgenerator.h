@@ -10,8 +10,8 @@ class MokGenerator : public QObject {
 public:
     explicit MokGenerator(QObject *parent = nullptr);
 
-    // Single responsibility: Fired up to run rootless OpenSSL key pair creation
-    bool generateKeyPair(const QString &commonName, int days, int keySize, const QString &outputDir, QString &logOutput);
+    // 🔒 FIXED SIGNATURE: Added 'const QString &baseFileName' parameter to match engine rules
+    bool generateKeyPair(const QString &commonName, const QString &baseFileName, int days, int keySize, const QString &outputDir, QString &logOutput);
 };
 
 #endif // MOKGENERATOR_H

@@ -5,14 +5,15 @@
 
 namespace MokConsoleTemplates {
 
+    // 🛡️ RE-ALIGNED PATH DEFINITION: Wiped out duplicate name text elements and structured the reference line layout beautifully
     const QString StartupBrief =
     "<table width='100%' height='100%' style='border-collapse: collapse; background-color: #1e1e24;'> "
     "  <tr>"
     "    <td align='center' valign='middle' style='width: 100%; height: 100%;'>"
-    "      <img src=':/assets/startup_splash.jpeg' width='170' height='200' style='display: block; object-fit: fill; margin-bottom: 12px;'>"
+    "      <img src='qrc:///assets/startup_splash.jpeg' width='190' height='254' style='display: block; object-fit: fill; margin-bottom: 24px;'>"
     "      <div style='font-family: \"Monospace\", \"Courier New\", monospace; color: #a4b0be; font-size: 12px; line-height: 1.4; text-align: left; width: 100%;'>"
-    "        <div style='color: #8395a7; font-weight: bold; font-size: 12px; letter-spacing: 1px; text-align: center; margin-bottom: 12px; white-space: nowrap;'> "
-    "          --- QUICKSTART REFERENCE ---"
+    "        <div style='color: #8395a7; font-weight: bold; font-size: 11px; letter-spacing: 1.5px; text-align: center; margin-bottom: 16px; border-bottom: 1px dashed #34495e; padding-bottom: 6px; white-space: nowrap;'> "
+    "          QUICKSTART REFERENCE"
     "        </div>"
     "        <div style='color: #00d2d3; font-weight: bold; font-size: 12px; margin-bottom: 2px;'>📊 Enrolled MOK Keys</div>"
     "        <div style='margin-bottom: 12px; color: #a4b0be;'>Query active system NVRAM banks to inspect loaded cryptographic signatures.</div>"

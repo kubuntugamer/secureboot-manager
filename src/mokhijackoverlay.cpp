@@ -4,10 +4,29 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QProcess>
+#include <QKeyEvent>
+
+// Custom Subclass to completely block the user from closing the lock overlay via keyboard escapes
+class ImmovableLockWindow : public QDialog {
+public:
+    explicit ImmovableLockWindow(QWidget *parent) : QDialog(parent) {}
+protected:
+    void keyPressEvent(QKeyEvent *event) override {
+        if (event->key() == Qt::Key_Escape) {
+            event->accept(); // Swallow escape keystroke event strings to prevent closing
+        } else {
+            QDialog::keyPressEvent(event);
+        }
+    }
+    void reject() override {
+        // Intercept close events to lock the widget container canvas down permanently
+    }
+};
 
 void launchBlockadeRebootOverlay(QWidget *parent)
 {
-    QDialog *lockWindow = new QDialog(parent, Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    ImmovableLockWindow *lockWindow = new ImmovableLockWindow(parent);
+    lockWindow->setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
     lockWindow->setModal(true);
     lockWindow->setStyleSheet("background-color: #0c0d10; color: #ffffff; font-family: monospace;");
     lockWindow->showFullScreen();
@@ -49,9 +68,22 @@ void launchBlockadeRebootOverlay(QWidget *parent)
         QProcess::startDetached("systemctl", QStringList() << "reboot");
     });
 
-    // ⏳ Manual Postponement Trigger
-    QObject::connect(btnRebootLater, &QPushButton::clicked, lockWindow, [lockWindow]() {
-        // Keeps the workspace layout screen blocked, but does not execute a hardware force restart
+    // ⏳ Disruptive Postponement Trigger
+    QObject::connect(btnRebootLater, &QPushButton::clicked, lockWindow, [lockWindow, bigAlert, infoText, btnRebootLater]() {
+        // Drop full-screen boundaries so they can access their native Linux desktop workspace safely
+        lockWindow->showNormal();
+        lockWindow->setFixedSize(500, 320);
+
+        // Repaint the screen panel elements to look like a persistent warning alert block card
         lockWindow->setWindowTitle("⚠️ Pending System Restart");
+        bigAlert->setText("⚠️ SECURE BOOT INCOMPLETE");
+        bigAlert->setStyleSheet("font-size: 14px; font-weight: bold; color: #f39c12; text-align: center;");
+
+        infoText->setText("Your core development application window remains locked down.\n\n"
+        "You can minimize this dialog card wrapper, but you must restart your machine "
+        "before any secure manager settings can be altered or running states changed.");
+
+        // Eliminate the duplicate button layout step out of the floating block state view canvas
+        btnRebootLater->hide();
     });
 }

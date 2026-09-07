@@ -2,41 +2,105 @@
 #include <QProcess>
 #include <QDebug>
 #include <QFile>
+#include <QDir>
+#include <QApplication>
 
 DebianDiscoveryEngine::DebianDiscoveryEngine(QObject *parent) : AbstractDiscoveryEngine(parent) {}
 
 void DebianDiscoveryEngine::discoverKernels()
 {
-    // 🎯 ABSOLUTE LAYOUT INJECTION: Direct mapping of your known verified system kernels
-    // This bypasses package manager naming mismatches entirely and forces them where they belong!
-    QStringList verifiedKernels;
-    verifiedKernels << "7.0.0-1011-oem"
-    << "7.0.0-1013-oem"
-    << "7.0.0-30-generic"
-    << "7.0.0-31-generic"
-    << "7.1.12-2-liquorix-amd64"
-    << "7.2.2-1-liquorix-amd64"
-    << "7.2.3-2-liquorix-amd64";
+    // FIX: Use pointer variables inside local heap allocations to store state context across async slots
+    auto *uNames = new QStringList();
+    auto *uPaths = new QStringList();
+    auto *sNames = new QStringList();
 
-    QStringList uNames;
-    QStringList uPaths;
-    QStringList sNames;
+    QDir bootDir("/boot");
+    QStringList kernelFiles = bootDir.entryList(QStringList() << "vmlinuz-*", QDir::Files);
 
-    for (const QString &version : verifiedKernels) {
-        QString displayLabel = QString("Linux %1").arg(version);
-        QString absolutePath = QString("/boot/vmlinuz-%1").arg(version);
-
-        // Only append to your right verified column layout if the file physically exists on your drive
-        if (QFile::exists(absolutePath)) {
-            sNames.append(displayLabel); // Force-routes them directly to the Verified Right column!
-        }
+    if (kernelFiles.isEmpty()) {
+        emit discoveryFinished(*uNames, *uPaths, *sNames);
+        // Clean up context containers to prevent data leaks
+        delete uNames; delete uPaths; delete sNames;
+        return;
     }
 
-    // Instantly pass the clean data arrays up to your UI panel layers without any background thread delays
-    emit discoveryFinished(uNames, uPaths, sNames);
+    // FIX: Allocate the process context to the heap to ensure layout boundaries remain active
+    QProcess *elevatedScanner = new QProcess(this);
+
+    // Filter file listings before structuring execution arrays to bypass ghost assets early
+    QStringList validKernels;
+    for (const QString &kernelFile : kernelFiles) {
+        if (kernelFile.startsWith(".") || kernelFile.endsWith(".unsigned") ||
+            kernelFile.endsWith(".bak")  || kernelFile.contains(".tmp_sign") ||
+            kernelFile.endsWith(".tmp")) {
+            continue;
+            }
+            validKernels.append(kernelFile);
+    }
+
+    if (validKernels.isEmpty()) {
+        emit discoveryFinished(*uNames, *uPaths, *sNames);
+        delete uNames; delete uPaths; delete sNames;
+        elevatedScanner->deleteLater();
+        return;
+    }
+
+    QString shellPayload = "";
+    for (int i = 0; i < validKernels.size(); ++i) {
+        QString absolutePath = bootDir.filePath(validKernels.at(i));
+        shellPayload += QString("echo '=== KERNEL_INDEX_%1 ==='; sbverify --list '%2' 2>&1; ").arg(i).arg(absolutePath);
+    }
+
+    // FIX: Concurrently link finishing states to the async dispatcher—completely removing waitForFinished UI blocks
+    connect(elevatedScanner, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, [this, elevatedScanner, validKernels, bootDir, uNames, uPaths, sNames](int exitCode, QProcess::ExitStatus status) {
+
+                if (status == QProcess::NormalExit && exitCode == 0) {
+                    QString consoleOutput = QString::fromUtf8(elevatedScanner->readAllStandardOutput());
+
+                    for (int i = 0; i < validKernels.size(); ++i) {
+                        QString kernelFile = validKernels.at(i);
+                        QString absolutePath = bootDir.filePath(kernelFile);
+                        QString version = kernelFile.mid(8);
+
+                        QString blockMarker = QString("=== KERNEL_INDEX_%1 ===").arg(i);
+                        int markerIdx = consoleOutput.indexOf(blockMarker);
+
+                        bool cryptographicPass = false;
+                        if (markerIdx != -1) {
+                            int nextMarkerIdx = consoleOutput.indexOf(QString("=== KERNEL_INDEX_%1 ===").arg(i + 1));
+                            QString blockText = (nextMarkerIdx != -1)
+                            ? consoleOutput.mid(markerIdx, nextMarkerIdx - markerIdx)
+                            : consoleOutput.mid(markerIdx);
+
+                            if (blockText.contains("signature") && !blockText.contains("No signature table present")) {
+                                cryptographicPass = true;
+                            }
+                        }
+
+                        if (cryptographicPass) {
+                            sNames->append(version);
+                        } else {
+                            uNames->append(version);
+                            uPaths->append(absolutePath);
+                        }
+                    }
+                } else {
+                    qWarning() << "⚠️ Async backend core discovery processing layer faulted or closed prematurely.";
+                }
+
+                // Emit our populated data models downstream safely
+                emit discoveryFinished(*uNames, *uPaths, *sNames);
+
+                // Clear dynamic memory footprints from the system stack cleanly
+                delete uNames; delete uPaths; delete sNames;
+                elevatedScanner->deleteLater();
+            });
+
+    // Start the root escalation prompt loop asynchronously
+    elevatedScanner->start("pkexec", QStringList() << "sh" << "-c" << shellPayload);
 }
 
-// Kept empty method body template intact to satisfy your parent class header inheritance layout mappings
 void DebianDiscoveryEngine::processNextPackage(const QStringList &packages, int index,
                                                QStringList uNames, QStringList uPaths, QStringList sNames,
                                                const QStringList &signedCachePaths)

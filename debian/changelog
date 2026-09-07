@@ -1,3 +1,22 @@
+secureboot-manager (0.1.0-9ubuntu5) resolute; urgency=medium
+
+  * Synchronized signing pipelines and forced strict sbverify cryptographic validation passes.
+  * Resolved right-column button event selection blocks using native QListWidget trackers.
+  * Isolated high-risk MOK NVRAM clearance modules to safeguard critical system structures.
+
+ -- chazz <chasbigham@gmail.com>  Sat, 05 Sep 2026 20:05:00 -0500
+
+secureboot-manager (0.1.0-9ubuntu4) resolute; urgency=medium
+
+  * Unify MokGeneratorPage wrapper architecture and restore dual-button
+    UI layout
+  * Unify MokGeneratorPage wrapper architecture and restore dual-button
+    layout
+  * Unify MokGeneratorPage wrapper architecture and restore dual-button
+    layout
+
+ -- chazz <chasbigham@gmail.com>  Sat, 05 Sep 2026 10:19:39 -0500
+
 secureboot-manager (0.1.0-9ubuntu1) resolute; urgency=medium
 
   * bring source code submissions into compliance with launchpad ppa policy

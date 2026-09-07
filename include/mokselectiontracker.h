@@ -5,12 +5,12 @@
 #include "mokkeyentry.h"
 
 class QTableWidget;
-class QTextBrowser;
+class QTextEdit;
 
 class MokSelectionTracker {
 public:
-    // Single responsibility: Connect table row highlights straight to your text browser box
-    static void initTracking(QTableWidget *table, QTextBrowser *browser, const QVector<MokKeyEntry> &keysCache);
+    // Single responsibility: Connect table row highlights straight to your text edit display box
+    static void initTracking(QTableWidget *table, QTextEdit *browser, const QVector<MokKeyEntry> &keysCache);
 };
 
 #endif // MOKSELECTIONTRACKER_H

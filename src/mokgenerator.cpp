@@ -1,55 +1,64 @@
 #include "mokgenerator.h"
 #include <QProcess>
-#include <QStringList>
 #include <QDir>
+#include <QFile>
 
-MokGenerator::MokGenerator(QObject *parent) : QObject(parent) {}
+MokGenerator::MokGenerator(QObject *parent)
+: QObject(parent)
+{
+}
 
-bool MokGenerator::generateKeyPair(const QString &commonName, int days, int keySize, const QString &outputDir, QString &logOutput) {
-    // 1. Sanity check: Ensure our destination directory layout physically exists on disk
-    QDir dir(outputDir);
-    if (!dir.exists()) {
-        if (!dir.mkpath(".")) {
-            logOutput = "Error: Failed to create target output directory paths.";
+// 🔒 UPDATED SIGNATURE: Accepts baseFileName to ensure precise workspace file localization
+bool MokGenerator::generateKeyPair(const QString &commonName, const QString &baseFileName, int days, int keySize, const QString &outputDir, QString &logOutput)
+{
+    QDir targetDir(outputDir);
+    if (!targetDir.exists()) {
+        if (!targetDir.mkpath(".")) {
+            logOutput += "[ERROR] Failed to instantiate target staging folder path: " + outputDir + "\n";
             return false;
         }
     }
 
-    QString keyPath = dir.absoluteFilePath("MOK.key");
-    QString derPath = dir.absoluteFilePath("MOK.der");
+    // 🎯 FIX: Tracks files using the unique base identity string instead of static 'MOK.*' tokens
+    QString privateKeyPath = targetDir.absoluteFilePath(QString("%1.priv").arg(baseFileName));
+    QString publicKeyPath = targetDir.absoluteFilePath(QString("%1.der").arg(baseFileName));
 
-    // 2. Map parameters out cleanly to a standard OpenSSL command parameter block
+    if (QFile::exists(privateKeyPath)) QFile::remove(privateKeyPath);
+    if (QFile::exists(publicKeyPath)) QFile::remove(publicKeyPath);
+
+    QString program = "openssl";
     QStringList arguments;
     arguments << "req" << "-new" << "-x509"
-    << "-newkey" << QString("rsa:%1").arg(keySize) // ✨ FIX: Clean, native Qt6 string formatting!
+    << "-newkey" << QString("rsa:%1").arg(keySize)
     << "-nodes"
     << "-days" << QString::number(days)
-    << "-keyout" << keyPath
-    << "-out" << derPath
-    << "-subj" << QString("/CN=%1/").arg(commonName);
+    << "-keyout" << privateKeyPath
+    << "-out" << publicKeyPath
+    << "-subj" << QString("/CN=%1/").arg(commonName)
+    << "-outform" << "DER";
 
-    logOutput += "Executing string: openssl " + arguments.join(" ") + "\n\n";
+    logOutput += "[EXEC] Running command: openssl " + arguments.join(" ") + "\n";
 
-    // 3. Establish an isolated process tracker to fire off the generation call rootless
     QProcess process;
-    process.start("openssl", arguments);
+    process.start(program, arguments);
 
-    if (!process.waitForStarted() || !process.waitForFinished()) {
-        logOutput += "Error: OpenSSL process failed to execute or timed out.";
+    if (!process.waitForFinished(10000)) {
+        process.kill();
+        logOutput += "[FATAL] OpenSSL process execution timed out or was forcefully blocked.\n";
         return false;
     }
 
-    // 4. Collect terminal diagnostics strings to stream straight to your visual console box
-    QString stdErr = QString::fromUtf8(process.readAllStandardError());
-    QString stdOut = QString::fromUtf8(process.readAllStandardOutput());
+    QString stdOut = QString::fromUtf8(process.readAllStandardOutput()).trimmed();
+    QString stdErr = QString::fromUtf8(process.readAllStandardError()).trimmed();
 
-    logOutput += stdErr + "\n" + stdOut;
+    if (!stdOut.isEmpty()) logOutput += stdOut + "\n";
+    if (!stdErr.isEmpty()) logOutput += stdErr + "\n";
 
-    if (process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0) {
-        logOutput += "\n✨ Success! Key pair generated perfectly inside your target folder directory.";
+    if (process.exitCode() == 0 && QFile::exists(privateKeyPath) && QFile::exists(publicKeyPath)) {
+        logOutput += "[SUCCESS] Cryptographic key signatures written cleanly to file system array channels.\n";
         return true;
     }
 
-    logOutput += "\n❌ Error: OpenSSL exited with failure code: " + QString::number(process.exitCode());
+    logOutput += QString("[ERROR] OpenSSL generation pipeline failed with exit code: %1\n").arg(process.exitCode());
     return false;
 }

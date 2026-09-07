@@ -9,12 +9,12 @@ class QTextBrowser;
 
 class MokUiGenerator {
 public:
-    // Single responsibility: Programmatically builds and styles all Page 2 input widgets cleanly
-    static void setupGenerationPage(QWidget *pageContainer,
-                                    QLineEdit *&commonNameEdit,
-                                    QSpinBox *&validityDaysSpin,
-                                    QPushButton *&generateBtn,
-                                    QTextBrowser *&logBrowser);
+    // 🔗 POINTER REFERENCE SIGNATURE: Passing parameters by reference (*&) allows assigning components back to the parent class
+    static void setupGenerationPage(QWidget *parent,
+                                    QLineEdit *&editCommonName,
+                                    QSpinBox *&spinDays,
+                                    QPushButton *&btnGenerate,
+                                    QTextBrowser *&textLog);
 };
 
 #endif // MOKUIGENERATOR_H

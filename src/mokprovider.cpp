@@ -22,9 +22,10 @@ QVector<MokKeyEntry> MokProvider::getLiveKeys() {
 
     MokKeyEntry currentKey;
     bool parsingKey = false;
+    bool expectingMultiLineSerial = false; // FIX: Added state flag tracker to handle broken serial strings cleanly
     QString currentRawBlock = "";
 
-    // 3. Robust tokenizer loop re-mapped to parse true native mokutil console lines
+    // 3. Robust state-machine loop to safely parse native mokutil console output line-by-line
     while (stream.readLineInto(&line)) {
         QString trimmedLine = line.trimmed();
 
@@ -41,8 +42,16 @@ QVector<MokKeyEntry> MokProvider::getLiveKeys() {
             currentKey.serialNumber = "N/A";
             currentRawBlock = line + "\n";
             parsingKey = true;
+            expectingMultiLineSerial = false; // Reset state tracking context flags on every fresh entry
         } else if (parsingKey) {
             currentRawBlock += line + "\n";
+
+            // FIX: If the previous line signaled an empty serial field header, capture this raw string payload safely
+            if (expectingMultiLineSerial) {
+                currentKey.serialNumber = trimmedLine;
+                expectingMultiLineSerial = false;
+                continue;
+            }
 
             // Parse identity label text fields using Subj/Issuer constraints natively
             if ((trimmedLine.contains("Subj:") || trimmedLine.contains("Issuer:")) && trimmedLine.contains("CN=")) {
@@ -61,7 +70,7 @@ QVector<MokKeyEntry> MokProvider::getLiveKeys() {
                     currentKey.commonName = currentKey.commonName.mid(1, currentKey.commonName.length() - 2);
                 }
             }
-            // 🛠️ FIXED TIMESTAMP SLICER: Slice cleanly right after the first header colon mapping matching index
+            // FIXED TIMESTAMP SLICER: Slice cleanly right after the first header colon mapping matching index
             else if (trimmedLine.contains("Not After :") || trimmedLine.contains("Not After:")) {
                 int sepIndex = trimmedLine.indexOf(":");
                 if (sepIndex != -1) {
@@ -76,9 +85,8 @@ QVector<MokKeyEntry> MokProvider::getLiveKeys() {
                 if (!potentialSerial.isEmpty()) {
                     currentKey.serialNumber = potentialSerial;
                 } else {
-                    stream.readLineInto(&line);
-                    currentRawBlock += line + "\n";
-                    currentKey.serialNumber = line.trimmed();
+                    // FIX: Trigger state flag rather than forcing manual internal stream advances to keep loop fully synchronized
+                    expectingMultiLineSerial = true;
                 }
             }
         }

@@ -12,11 +12,11 @@ public:
     explicit MokAutomationBackend(QObject *parent = nullptr);
     ~MokAutomationBackend();
 
-    // Deploys the automated post-install hook script into /etc/kernel/postinst.d/
     bool deployKernelPostInstHook(const QString &keyPath, const QString &derPath, QString &logOutput);
-
-    // Injects the custom key configuration paths into the global DKMS framework file
     bool configureDkmsAutomation(const QString &keyPath, const QString &derPath, QString &logOutput);
+
+    // Explicitly registers our new module so the compiler stops throwing a 'not a member' error
+    static QString generateSigningPayload(const QString &keyPath, const QString &certPath, const QString &targetBinary, const QString &kernelVersion);
 };
 
 #endif // MOKAUTOMATIONBACKEND_H

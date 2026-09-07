@@ -22,6 +22,7 @@ private:
     QLineEdit *editGenCommonName = nullptr;
     QSpinBox *spinGenDays = nullptr;
     QPushButton *btnGenerateMok = nullptr;
+    QPushButton *btnRevokeMok = nullptr; // 🔍 FIXED: Declare pointer so the compiler can recognize it in mokgeneratorpage.cpp
     QTextBrowser *textGenerationLog = nullptr;
 };
 

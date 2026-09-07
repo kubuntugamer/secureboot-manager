@@ -1,8 +1,8 @@
 #include "mokselectiontracker.h"
 #include <QTableWidget>
-#include <QTextBrowser>
+#include <QTextEdit>
 
-void MokSelectionTracker::initTracking(QTableWidget *table, QTextBrowser *browser, const QVector<MokKeyEntry> &keysCache) {
+void MokSelectionTracker::initTracking(QTableWidget *table, QTextEdit *browser, const QVector<MokKeyEntry> &keysCache) {
     if (!table || !browser) return;
 
     QObject::connect(table, &QTableWidget::itemClicked, [table, browser, keysCache](QTableWidgetItem *item) {

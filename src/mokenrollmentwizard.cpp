@@ -2,112 +2,137 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QCheckBox>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QMessageBox>
 
 MokEnrollmentWizard::MokEnrollmentWizard(QWidget *parent)
 : QDialog(parent)
 {
-    setWindowTitle("🚨 SECURE BOOT FIRMWARE REGISTRATION WIZARD");
-    setModal(true);
-    setFixedWidth(520);
-    setStyleSheet("background-color: #1e1e24; color: #ffffff; font-family: monospace;");
-
     buildInterfaceElements();
 }
 
 void MokEnrollmentWizard::buildInterfaceElements()
 {
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(25, 25, 25, 25);
-    mainLayout->setSpacing(14);
+    this->setWindowTitle("⚠️ SECURE BOOT FIRMWARE REGISTRATION WIZARD");
+    this->setFixedSize(540, 420);
+    this->setModal(true);
 
-    QLabel *headerLabel = new QLabel("🔒 MACHINE OWNER KEY (MOK) SYSTEM INTERLOCK", this);
-    headerLabel->setStyleSheet("font-size: 13px; font-weight: bold; color: #e74c3c;");
-    mainLayout->addWidget(headerLabel);
+    QVBoxLayout *masterLayout = new QVBoxLayout(this);
+    masterLayout->setContentsMargins(20, 20, 20, 20);
+    masterLayout->setSpacing(15);
 
-    QLabel *bodyLabel = new QLabel(
-        "You are registering a Machine Owner Key (MOK) with your UEFI firmware database.<br><br>"
-        "<b>CRITICAL USER REQUIREMENT:</b> On the absolute next reboot, your system will halt and display a dark blue screen titled "
-        "<b>Shim UEFI Key Management</b>. You must physically select <b>'Enroll MOK'</b> and type the validation password you define below.",
-        this
-    );
-    bodyLabel->setWordWrap(true);
-    bodyLabel->setStyleSheet("font-size: 11px; color: #bdc3c7; line-height: 1.4;");
-    mainLayout->addWidget(bodyLabel);
+    QLabel *titleLabel = new QLabel("🔒 MACHINE OWNER KEY (MOK) SYSTEM INTERLOCK", this);
+    QFont titleFont = titleLabel->font();
+    titleFont.setBold(true);
+    titleFont.setPointSize(11);
+    titleLabel->setFont(titleFont);
+    titleLabel->setStyleSheet("color: #e74c3c;");
+    masterLayout->addWidget(titleLabel);
 
-    mainLayout->addWidget(new QLabel("<hr style='border: 0; border-top: 1px solid #3f4142;'>", this));
+    QLabel *descLabel = new QLabel(
+        "You are staging a Machine Owner Key (MOK) signature with your UEFI database.\n\n"
+        "CRITICAL USER REQUIREMENT: On the absolute next system reboot, your system will halt "
+        "and display a dark blue screen titled MOKManager. You must type this password exactly.", this);
+    descLabel->setWordWrap(true);
+    masterLayout->addWidget(descLabel);
 
-    // 🔑 STEP 2.1: CREATE THE PRIMARY PASSWORD DEFINE FIELD
-    QLabel *passPrompt = new QLabel("1. CHOOSE YOUR TEMPORARY REBOOT PASSWORD:", this);
-    passPrompt->setStyleSheet("font-size: 11px; font-weight: bold; color: #ff9f43;");
-    mainLayout->addWidget(passPrompt);
+    QVBoxLayout *passBlock = new QVBoxLayout();
+    passBlock->setSpacing(6);
 
+    QLabel *lblPass = new QLabel("1. CHOOSE YOUR TEMPORARY REBOOT PASSWORD:", this);
+    lblPass->setStyleSheet("color: #ff9f43; font-weight: bold;");
     editUserPassword = new QLineEdit(this);
     editUserPassword->setEchoMode(QLineEdit::Password);
     editUserPassword->setPlaceholderText("Create your temporary boot password here...");
-    editUserPassword->setStyleSheet("background-color: #15191c; color: #ffffff; border: 1px solid #3f4142; border-radius: 4px; padding: 6px; font-size: 11px;");
-    mainLayout->addWidget(editUserPassword);
+    editUserPassword->setMinimumHeight(32);
 
-    // ⏹️ Safety interlock checkboxes
-    chkAcknowledgeBlueScreen = new QCheckBox("I understand I must physically register this via a BLUE PRE-BOOT SCREEN on reboot.", this);
-    chkAcknowledgeBlueScreen->setStyleSheet("color: #ffaa00; font-size: 11px; font-weight: bold;");
-    mainLayout->addWidget(chkAcknowledgeBlueScreen);
-
-    chkAcknowledgeDataLockout = new QCheckBox("I accept that skipping the blue menu or forgetting this pass will lockout custom kernels.", this);
-    chkAcknowledgeDataLockout->setStyleSheet("color: #ffaa00; font-size: 11px; font-weight: bold;");
-    mainLayout->addWidget(chkAcknowledgeDataLockout);
-
-    // ✍️ STEP 2.2: CREATE THE CONFIRMATION FIELD FOR MUSCLE MEMORY
-    QLabel *confirmPrompt = new QLabel("2. RE-TYPE PASSWORD TO CONFIRM MUSCLE MEMORY:", this);
-    confirmPrompt->setStyleSheet("font-size: 11px; font-weight: bold; color: #bdc3c7;");
-    mainLayout->addWidget(confirmPrompt);
-
+    QLabel *lblConfirm = new QLabel("2. RE-TYPE PASSWORD TO CONFIRM MUSCLE MEMORY:", this);
+    lblConfirm->setStyleSheet("color: #ff9f43; font-weight: bold;");
     editPasswordConfirmation = new QLineEdit(this);
     editPasswordConfirmation->setEchoMode(QLineEdit::Password);
     editPasswordConfirmation->setPlaceholderText("Retype the exact same password phrase here...");
-    editPasswordConfirmation->setStyleSheet("background-color: #15191c; color: #ffffff; border: 1px solid #3f4142; border-radius: 4px; padding: 6px; font-size: 11px;");
-    mainLayout->addWidget(editPasswordConfirmation);
+    editPasswordConfirmation->setMinimumHeight(32);
 
-    // Control button layout
-    QHBoxLayout *actionLayout = new QHBoxLayout();
+    passBlock->addWidget(lblPass);
+    passBlock->addWidget(editUserPassword);
+    passBlock->addWidget(lblConfirm);
+    passBlock->addWidget(editPasswordConfirmation);
+    masterLayout->addLayout(passBlock);
+
+    warningBanner = new QLabel(
+        "⚠️ CRITICAL SYSTEM WARNING ⚠️\n"
+        "FORGETTING OR SKIPPING THIS PASSWORD ON REBOOT WILL PREVENT YOUR KEY FROM ENROLLING, "
+        "CAUSING CUSTOM LINUX KERNELS TO FAIL SECURE BOOT INTEGRITY LOOPS INSTANTLY.", this);
+    warningBanner->setWordWrap(true);
+    warningBanner->setAlignment(Qt::AlignCenter);
+    warningBanner->setStyleSheet(
+        "background-color: #2c1e1e;"
+        "border: 2px solid #e74c3c;"
+        "border-radius: 4px;"
+        "color: #ff6b6b;"
+        "font-weight: bold;"
+        "padding: 10px;"
+        "font-size: 11px;"
+    );
+    masterLayout->addWidget(warningBanner);
+
+    QHBoxLayout *btnLayout = new QHBoxLayout();
+    btnLayout->setSpacing(12);
+
     btnAbortSafely = new QPushButton("Abort Action Safely", this);
-    btnAbortSafely->setStyleSheet("background-color: #34495e; color: #ffffff; padding: 8px; border-radius: 4px; font-size: 11px; font-weight: bold;");
-
-    btnProceedToSystemImport = new QPushButton("Force Registration Request", this);
-    btnProceedToSystemImport->setEnabled(false); // HARD LOCKED BY DEFAULT
-    btnProceedToSystemImport->setStyleSheet("background-color: #2c3e50; color: #7f8c8d; padding: 8px; border-radius: 4px; font-size: 11px; font-weight: bold;");
-
-    actionLayout->addWidget(btnAbortSafely);
-    actionLayout->addWidget(btnProceedToSystemImport);
-    mainLayout->addLayout(actionLayout);
-
-    // Hook up dynamic input listeners
-    connect(editUserPassword, &QLineEdit::textChanged, this, &MokEnrollmentWizard::evaluateInterlockState);
-    connect(chkAcknowledgeBlueScreen, &QCheckBox::toggled, this, &MokEnrollmentWizard::evaluateInterlockState);
-    connect(chkAcknowledgeDataLockout, &QCheckBox::toggled, this, &MokEnrollmentWizard::evaluateInterlockState);
-    connect(editPasswordConfirmation, &QLineEdit::textChanged, this, &MokEnrollmentWizard::evaluateInterlockState);
-
+    btnAbortSafely->setMinimumHeight(38);
     connect(btnAbortSafely, &QPushButton::clicked, this, &QDialog::reject);
-    connect(btnProceedToSystemImport, &QPushButton::clicked, this, &QDialog::accept);
+
+    btnProceedToSystemImport = new QPushButton("⚠️ Acknowledge Risks & Request Registration", this);
+    btnProceedToSystemImport->setMinimumHeight(38);
+    QFont actFont = btnProceedToSystemImport->font();
+    actFont.setBold(true);
+    btnProceedToSystemImport->setFont(actFont);
+    btnProceedToSystemImport->setStyleSheet("background-color: #34495e; color: #ffffff;");
+    connect(btnProceedToSystemImport, &QPushButton::clicked, this, &MokEnrollmentWizard::handleRegistrationSequence);
+
+    btnLayout->addWidget(btnAbortSafely);
+    btnLayout->addWidget(btnProceedToSystemImport);
+    masterLayout->addLayout(btnLayout);
 }
 
-void MokEnrollmentWizard::evaluateInterlockState()
+void MokEnrollmentWizard::handleRegistrationSequence()
 {
-    QString firstPass = editUserPassword->text().trimmed();
-    QString confirmedPass = editPasswordConfirmation->text().trimmed();
+    QString pass = editUserPassword->text();
+    QString confirm = editPasswordConfirmation->text();
 
-    bool passNotEmpty = !firstPass.isEmpty();
-    bool checksPassed = chkAcknowledgeBlueScreen->isChecked() && chkAcknowledgeDataLockout->isChecked();
-    bool stringMatched = (firstPass == confirmedPass);
+    if (pass.isEmpty() || confirm.isEmpty()) {
+        QMessageBox::warning(this, "Fields Incomplete", "Both password verification blocks must be populated.");
+        return;
+    }
 
-    if (passNotEmpty && checksPassed && stringMatched) {
-        btnProceedToSystemImport->setEnabled(true);
-        btnProceedToSystemImport->setStyleSheet("background-color: #e74c3c; color: #ffffff; padding: 8px; border-radius: 4px; font-size: 11px; font-weight: bold;");
-    } else {
-        btnProceedToSystemImport->setEnabled(false);
-        btnProceedToSystemImport->setStyleSheet("background-color: #2c3e50; color: #7f8c8d; padding: 8px; border-radius: 4px; font-size: 11px; font-weight: bold;");
+    if (pass != confirm) {
+        QMessageBox::critical(this, "Mismatch Detected", "The typed password tokens do not match. Reverify muscle memory entry.");
+        return;
+    }
+
+    QMessageBox::StandardButton midAirCheck = QMessageBox::warning(this,
+                                                                   "⚠️ DANGER ZONE INTERLOCK",
+                                                                   "ATTENTION: You are about to initiate firmware modification pipelines.\n\n"
+                                                                   "Are you absolutely certain you have memorized this passphrase signature? If the bootloader rejects it, you will lose signature validation tracking access.",
+                                                                   QMessageBox::Ok | QMessageBox::Abort,
+                                                                   QMessageBox::Abort
+    );
+
+    if (midAirCheck != QMessageBox::Ok) {
+        return;
+    }
+
+    QMessageBox::StandardButton finalGate = QMessageBox::question(this,
+                                                                  "🔄 FINAL COMPLIANCE VERIFICATION",
+                                                                  "Are you sure?\n\nSelect YES to write data to NVRAM lanes, or NO to review inputs.",
+                                                                  QMessageBox::Yes | QMessageBox::No,
+                                                                  QMessageBox::No
+    );
+
+    if (finalGate == QMessageBox::Yes) {
+        this->accept();
     }
 }
 
@@ -115,10 +140,7 @@ QString MokEnrollmentWizard::enforceSystemEnrollment(QWidget *parent)
 {
     MokEnrollmentWizard wizard(parent);
     if (wizard.exec() == QDialog::Accepted) {
-        // 💎 FIXED: Extract string out directly from the scope pointer variable within the active lifecycle frame
-        if (wizard.editUserPassword) {
-            return wizard.editUserPassword->text().trimmed();
-        }
+        return wizard.editUserPassword->text();
     }
-    return ""; // Return clean empty string if aborted
+    return QString();
 }
