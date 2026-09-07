@@ -5,7 +5,7 @@
 
 class QLineEdit;
 class QPushButton;
-class AbstractDiscoveryEngine; // Forward declaration for our plug interface
+class AbstractDiscoveryEngine;
 
 class MokSignerPage : public QWidget
 {
@@ -19,7 +19,7 @@ private:
     QPushButton *btnBrowseBinary = nullptr;
     QPushButton *btnExecuteSignature = nullptr;
 
-    AbstractDiscoveryEngine *discoveryEngine = nullptr; // Tracks the active plugin reference
+    AbstractDiscoveryEngine *discoveryEngine = nullptr;
 
     void setupExecutionHook();
     void triggerScan();

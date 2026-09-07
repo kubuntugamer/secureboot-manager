@@ -3,6 +3,8 @@
 #include <QTextStream>
 #include <QDir>
 #include <QProcess>
+#include <QRegularExpression>
+#include <QDebug>
 
 MokAutomationBackend::MokAutomationBackend(QObject *parent) : QObject(parent) {}
 MokAutomationBackend::~MokAutomationBackend() {}
@@ -10,7 +12,7 @@ MokAutomationBackend::~MokAutomationBackend() {}
 bool MokAutomationBackend::deployKernelPostInstHook(const QString &keyPath, const QString &derPath, QString &logOutput)
 {
     if (!QFile::exists(keyPath) || !QFile::exists(derPath)) {
-        logOutput = "❌ Automation Failure: Specified cryptographic key or certificate files do not exist locally.";
+        logOutput = QStringLiteral("❌ Automation Failure: Specified cryptographic key or certificate files do not exist locally.");
         return false;
     }
 
@@ -32,18 +34,18 @@ bool MokAutomationBackend::deployKernelPostInstHook(const QString &keyPath, cons
     "fi\n"
     "exit 0\n";
 
-    QString stagingPath = QDir::homePath() + "/.secureboot-manager-hook-sh";
+    QString stagingPath = QDir::homePath() + QStringLiteral("/.secureboot-manager-hook-sh");
     QFile file(stagingPath);
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream stream(&file);
         stream << targetScriptContent;
         file.close();
 
-        logOutput = "📝 Staged automated kernel post-install update script successfully.";
+        logOutput = QStringLiteral("📝 Staged automated kernel post-install update script successfully.");
         return true;
     }
 
-    logOutput = "❌ Critical File IO Error: Unable to write staging configuration asset file locally.";
+    logOutput = QStringLiteral("❌ Critical File IO Error: Unable to write staging configuration asset file locally.");
     return false;
 }
 
@@ -54,21 +56,20 @@ bool MokAutomationBackend::configureDkmsAutomation(const QString &keyPath, const
     "mok_signing_key=\"" + keyPath + "\"\n"
     "mok_signing_cert=\"" + derPath + "\"\n";
 
-    QString stagingPath = QDir::homePath() + "/.secureboot-manager-dkms-append";
+    QString stagingPath = QDir::homePath() + QStringLiteral("/.secureboot-manager-dkms-append");
     QFile file(stagingPath);
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream stream(&file);
         stream << dkmsConfigAppend;
         file.close();
 
-        logOutput = "📝 Staged third-party DKMS frame automation settings configuration blocks successfully.";
+        logOutput = QStringLiteral("📝 Staged third-party DKMS frame automation settings configuration blocks successfully.");
         return true;
     }
 
-    logOutput = "❌ Critical File IO Error: Unable to write staging DKMS framework configuration asset files.";
+    logOutput = QStringLiteral("❌ Critical File IO Error: Unable to write staging DKMS framework configuration asset files.");
     return false;
 }
-
 // 🛡️ MODULAR SIGNING ENGINE: Bound natively to the Qt Creator compiler engine
 QString MokAutomationBackend::generateSigningPayload(const QString &keyPath, const QString &certPath, const QString &targetBinary, const QString &kernelVersion)
 {
