@@ -1,6 +1,0 @@
-9/1 05:11:04.670  vendor: AuthenticAMD
-9/1 05:11:04.670  branding: AMD Ryzen 5 7520U with Radeon Graphics         
-9/1 05:11:04.670  features: lahf64 cmpxchg16b sse sse2 sse3 ssse3 sse41 sse42 avx avx2 aesni clmul sha rdrand 
-9/1 05:11:04.670  sockets: 1
-9/1 05:11:04.670  cores: 4
-9/1 05:11:04.670  threads: 8
