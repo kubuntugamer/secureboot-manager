@@ -232,7 +232,7 @@ void MokSignerPage::populateKeySelector()
         if (!dir.exists()) continue;
 
         QStringList filters = { QStringLiteral("*.priv"), QStringLiteral("*.key") };
-        QFileInfoList fileList = dir.entryInfoList(filters, QDir::Files | QDir::Readable);
+        QFileInfoList fileList = dir.entryInfoList(filters, QDir::Files);
 
         for (const QFileInfo &fileInfo : fileList) {
             QString keyPath = fileInfo.absoluteFilePath();
