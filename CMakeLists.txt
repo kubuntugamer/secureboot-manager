@@ -18,16 +18,16 @@ qt_standard_project_setup()
 # Compile target with verified explicit file path matching
 qt_add_executable(secureboot-manager
     # Root Entry and Asset Layer Configurations
-    main.cpp
-    resources.qrc
+    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
 
     # Presentation & UI Modules (.ui and .cpp files inside ui/)
-    ui/mainwindow.cpp
-    ui/mainwindow.ui
-    ui/mokledgerpage.cpp
-    ui/mokaboutdialog.cpp
-    src/mokgeneratorpage.cpp
-    src/moksignerpage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/mainwindow.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/mainwindow.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/mokledgerpage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/mokaboutdialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokgeneratorpage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/moksignerpage.cpp
 
     # Mapped core headers out of your actual 'include/' directory block
     # Satisfies CMake's source tree validation and hooks headers using Q_OBJECT into AUTOMOC
@@ -41,41 +41,38 @@ qt_add_executable(secureboot-manager
     ${CMAKE_CURRENT_SOURCE_DIR}/include/mokautomationbackend.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/mokdashboardconsole.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/abstractdiscoveryengine.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/moksigningwizard.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/mokenrollmentwizard.h
-
-    # FIX: Added the missing generator header to clear the final vtable linking error!
     ${CMAKE_CURRENT_SOURCE_DIR}/include/mokgenerator.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/mokuisigner.h
 
     # Core Systems Logic Engine
-    src/mokautomationbackend.cpp
-    src/mokuiadapter.cpp
-    src/mokprovider.cpp
-    src/mokgenerator.cpp
-    src/mokuigenerator.cpp
-    src/mokuisigner.cpp
-    src/mokselectiontracker.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokautomationbackend.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokuiadapter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokprovider.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokgenerator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokuigenerator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokselectiontracker.cpp
+
+    # Modularized UI Signer Modules (Split)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokuisigner_init.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokuisigner_executor.cpp
 
     # Diagnostics & Monitoring System Console
-    src/mokdashboardconsole.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokdashboardconsole.cpp
 
     # Extensible Kernel Discovery Engine
-    src/debiandiscoveryengine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/debiandiscoveryengine.cpp
 
     # Security Interlocks & Defensive Overlay Blocks
-    src/mokenrollmentwizard.cpp
-    src/mokhijackoverlay.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokenrollmentwizard.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokhijackoverlay.cpp
 
     # Automated Remediation & MOK Removal Wizard Module Elements
-    src/mokremovalwizard.cpp
-    src/mokremovalwizard_init.cpp
-    src/mokremovalwizard_ledger.cpp
-    src/mokremovalwizard_verify.cpp
-    src/mokremovalwizard_scanner.cpp
-    src/mokremovalwizard_executor.cpp
-
-    # Guided Kernel Signing Wizard Module Elements
-    src/moksigningwizard.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokremovalwizard_init.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokremovalwizard_ledger.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokremovalwizard_verify.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokremovalwizard_scanner.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mokremovalwizard_executor.cpp
 )
 
 # Map include directories privately to the target executable architecture

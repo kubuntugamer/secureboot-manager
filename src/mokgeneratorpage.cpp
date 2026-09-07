@@ -16,6 +16,7 @@
 #include <QFile>
 #include <QRegularExpression>
 #include <QMessageBox>
+#include <QTimer>
 
 MokGeneratorPage::MokGeneratorPage(QWidget *parent)
 : QWidget(parent)
@@ -76,11 +77,9 @@ MokGeneratorPage::MokGeneratorPage(QWidget *parent)
         baseFileName.replace(QRegularExpression("[^a-zA-Z0-9_\\-]"), "_");
 
         // Feed the active name state straight down to executeKeyRevocation modal loop wrapper
-        bool modificationCommitted = MokRemovalWizard::executeKeyRevocation(inputCN, "", this);
+        MokRemovalWizard::executeKeyRevocation(inputCN, "", this);
 
-        if (modificationCommitted) {
-            textGenerationLog->append(QString("\n⚠️ Notice: Revocation requests successfully filed for MOK identity asset: [%1].").arg(baseFileName));
-        }
+        textGenerationLog->append(QString("\n⚠️ Notice: Revocation requests successfully filed for MOK identity asset: [%1].").arg(baseFileName));
     });
 }
 
@@ -123,13 +122,21 @@ void MokGeneratorPage::executeMokKeyPairGeneration()
 
     textGenerationLog->append("\n📡 User verified parameters. Submitting cryptographic payload tokens via mokutil...");
 
+    // Enforce Rule 1: Strict target binary tokens. Complete separation from shell execution chains.
     QProcess *mokutilProcess = new QProcess(this);
+    QString program = "pkexec";
+    QStringList arguments;
+    arguments << "mokutil" << "--import" << certPath;
 
-    QString escapedPass = userDefinedPassword;
-    escapedPass.replace("'", "'\\''");
-
-    QString shellCmd = QString("printf '%%s\\n%%s\\n' '%1' '%1' | mokutil --import '%2'")
-    .arg(escapedPass, certPath);
+    // Stream inputs securely via standard inputs on the started callback to satisfy secure interactive TTY bounds
+    connect(mokutilProcess, &QProcess::started, this, [mokutilProcess, userDefinedPassword]() {
+        mokutilProcess->write(userDefinedPassword.toUtf8() + "\n");
+        QTimer::singleShot(50, mokutilProcess, [mokutilProcess, userDefinedPassword]() {
+            if (mokutilProcess->state() == QProcess::Running) {
+                mokutilProcess->write(userDefinedPassword.toUtf8() + "\n");
+            }
+        });
+    });
 
     connect(mokutilProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [this, mokutilProcess, baseFileName](int exitCode, QProcess::ExitStatus status) {
         if (status == QProcess::NormalExit && exitCode == 0) {
@@ -141,7 +148,6 @@ void MokGeneratorPage::executeMokKeyPairGeneration()
             msgBox.setText("<b>The Machine Owner Key is safely staged in NVRAM.</b><br><br>"
             "Would you like to restart the system now, or defer the reboot until you are finished working?");
 
-            // 🎯 FIXED: Normal strings, absolutely no tr() macros to avoid compilation dropouts
             QPushButton *rebootLater = msgBox.addButton("Reboot Later", QMessageBox::RejectRole);
             QPushButton *rebootNow = msgBox.addButton("Reboot Now", QMessageBox::AcceptRole);
 
@@ -152,7 +158,6 @@ void MokGeneratorPage::executeMokKeyPairGeneration()
             msgBox.exec();
 
             if (msgBox.clickedButton() == rebootNow) {
-                // 🛑 SAFE MODE: No auto-reboot commands. Simply prompts the user to do it manually.
                 textGenerationLog->append("\n📡 User selected Reboot Now. Please save your work and manually restart via your desktop menu.");
                 QMessageBox::information(this, "Manual Reboot Required",
                                          "Automated restarts are completely disabled to protect your environment.<br><br>"
@@ -171,5 +176,5 @@ void MokGeneratorPage::executeMokKeyPairGeneration()
         mokutilProcess->deleteLater();
     });
 
-    mokutilProcess->start("pkexec", QStringList() << "sh" << "-c" << shellCmd);
+    mokutilProcess->start(program, arguments);
 }

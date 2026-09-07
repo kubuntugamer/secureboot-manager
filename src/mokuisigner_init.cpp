@@ -6,13 +6,8 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QListWidget>
-#include <QDir>
 #include <QTextBrowser>
-#include <QProcess>
-#include <QFile>
-#include <QDebug>
-#include <QBrush>
-#include <QFileDialog> // Included for native file picker dialog interface integration
+#include <QFileDialog>
 
 void MokUiSigner::setupSigningPage(QWidget *pageContainer, QLineEdit *&targetPathEdit, QLineEdit *&keyPathEdit,
                                    QPushButton *&browseBinaryBtn, QPushButton *&executeSignBtn,
@@ -21,7 +16,7 @@ void MokUiSigner::setupSigningPage(QWidget *pageContainer, QLineEdit *&targetPat
 {
     if (!pageContainer) return;
 
-    // 🧼 Purge old layout elements
+    // Purge old layout elements
     qDeleteAll(pageContainer->findChildren<QWidget *>(QString(), Qt::FindDirectChildrenOnly));
     if (pageContainer->layout()) {
         QLayoutItem *item;
@@ -102,16 +97,12 @@ void MokUiSigner::setupSigningPage(QWidget *pageContainer, QLineEdit *&targetPat
     } else {
         for (int i = 0; i < signedLabels.size(); ++i) {
             QListWidgetItem *item = new QListWidgetItem(QString("🔒 %1 [Verified & Protected]").arg(signedLabels.at(i)), verifiedListWidget);
-
-            // 💎 FIX: Map the dynamic verified path token from the discovery engine directly into the item data role string vector
             QString pairedSignedPath = (i < signedPaths.size()) ? signedPaths.at(i) : QString();
             item->setData(Qt::UserRole, pairedSignedPath);
         }
 
-        // Native index listener assignment mapping
         QObject::connect(verifiedListWidget, &QListWidget::itemClicked, pageContainer, [pageContainer](QListWidgetItem *item) {
             QString resolvedBootPath = item->data(Qt::UserRole).toString();
-
             pageContainer->setProperty("selectedKernelPath", resolvedBootPath);
 
             if (auto log = pageContainer->findChild<QTextBrowser*>("signerLogTerminal")) {
@@ -138,7 +129,6 @@ void MokUiSigner::setupSigningPage(QWidget *pageContainer, QLineEdit *&targetPat
     keyPathEdit->setStyleSheet("background-color: #1e1e24; color: #ffffff; border: 1px solid #3f4142; border-radius: 4px; padding: 6px; font-size: 11px;");
     mainLayout->addWidget(new QLabel("Staged Authorization Key Asset Path:", pageContainer));
 
-    // 🔑 HORIZONTAL BUTTON MIX: Bundles the input text field and the browse action into a single bar row layout
     QHBoxLayout *keyRowLayout = new QHBoxLayout();
     keyRowLayout->setSpacing(8);
 
@@ -151,17 +141,15 @@ void MokUiSigner::setupSigningPage(QWidget *pageContainer, QLineEdit *&targetPat
         "QPushButton:hover { background-color: #34495e; }"
     );
 
-    // Arrange the components side by side
-    keyRowLayout->addWidget(keyPathEdit, 1); // Gives the text field maximum stretching expansion priority
+    keyRowLayout->addWidget(keyPathEdit, 1);
     keyRowLayout->addWidget(btnBrowseKey);
     mainLayout->addLayout(keyRowLayout);
 
-    // 📁 NATIVE DESKTOP FILE SYSTEM DIALOG CONNECTED STREAM
     QObject::connect(btnBrowseKey, &QPushButton::clicked, pageContainer, [keyPathEdit, pageContainer]() {
         QString selectedFile = QFileDialog::getOpenFileName(
             pageContainer,
             "Select Secure Boot Authorization Asset Key",
-            "/var/lib/shim-signed/mok", // Default directory path cache context mapping
+            "/var/lib/shim-signed/mok",
             "MOK Credentials (*.priv *.key *.der *.pem);;All Files (*)"
         );
 
@@ -183,34 +171,4 @@ void MokUiSigner::setupSigningPage(QWidget *pageContainer, QLineEdit *&targetPat
     signerLogTerminal->setMinimumHeight(120);
     signerLogTerminal->setStyleSheet("background-color: #15191c; color: #3daee9; border: 1px solid #2c3e50; border-radius: 4px; padding: 8px; font-family: monospace; font-size: 10pt;");
     mainLayout->addWidget(signerLogTerminal);
-}
-
-bool MokUiSigner::unsignKernelBinary(const QString &kernelPath)
-{
-    if (kernelPath.isEmpty() || !QFile::exists(kernelPath)) {
-        qWarning() << "Invalid or non-existent kernel path provided for unsigning:" << kernelPath;
-        return false;
-    }
-
-    QStringList arguments;
-    arguments << "sbattach" << "--remove" << kernelPath;
-
-    QProcess process;
-    process.start("pkexec", arguments);
-
-    if (!process.waitForStarted(3000)) {
-        qCritical() << "Failed to start pkexec process for signature removal.";
-        return false;
-    }
-
-    process.waitForFinished(-1);
-
-    if (process.exitStatus() == QProcess::NormalExit && process.exitCode() == 0) {
-        qDebug() << "Successfully removed signature from kernel binary:" << kernelPath;
-        return true;
-    } else {
-        QString errorOutput = QString::fromUtf8(process.readAllStandardError());
-        qCritical() << "Failed to unsign kernel binary. Exit code:" << process.exitCode() << "Error:" << errorOutput.trimmed();
-        return false;
-    }
 }

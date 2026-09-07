@@ -6,8 +6,6 @@
 #include <QPushButton>
 #include <QStackedWidget>
 #include <QTextBrowser>
-#include <QStandardPaths>
-#include <QMessageBox>
 
 MokRemovalWizard::MokRemovalWizard(const QString &keyName, const QString &keySerial, QWidget *parent)
 : QDialog(parent), targetKeyName(keyName), targetKeySerial(keySerial)
@@ -15,7 +13,6 @@ MokRemovalWizard::MokRemovalWizard(const QString &keyName, const QString &keySer
     this->setWindowTitle("⚠️ AUTOMATED MOK DELETION & REMEDIATION WIZARD");
     this->setFixedSize(580, 460);
 
-    // Sovereignty Configuration: Ensure background window canvas remains interactive
     this->setModal(false);
     this->setAttribute(Qt::WA_DeleteOnClose);
     this->setWindowFlags(Qt::Window | Qt::WindowMinMaxButtonsHint | Qt::WindowCloseButtonHint);
@@ -24,19 +21,13 @@ MokRemovalWizard::MokRemovalWizard(const QString &keyName, const QString &keySer
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->addWidget(wizardStack);
 
-    // Verify system dependencies exist prior to analyzing local disk storage
-    isEnvironmentValid = verifySystemToolchain();
+    isEnvironmentValid = verifySystemToolchain(); // Defined in src/mokremovalwizard_verify.cpp
 
-    // =========================================================================
-    // 🛠️ MULTI-STAGE BLUEPRINT SEQUENCE (FIXED DYNAMIC RE-INSERTION SHIFTS)
-    // ASSOCIATED CODE FILES: include/mokremovalwizard.h, src/mokremovalwizard_init.cpp
-    // ROADMAP STEP: Mount pages exactly once via stable addWidget layout structures
-    // =========================================================================
-    buildSelectionPage();          // Stack Index 0
-    buildRemediationPage();        // Stack Index 1
-    buildPasswordAssignmentPage(); // Stack Index 2
+    buildSelectionPage();          // Stack Index 0 -> Defined in src/mokremovalwizard_ledger.cpp
+    buildRemediationPage();        // Stack Index 1 -> Defined below
+    buildPasswordAssignmentPage(); // Stack Index 2 -> Defined below
 
-    wizardStack->setCurrentIndex(0); // Force the wizard to explicitly start on the selection list
+    wizardStack->setCurrentIndex(0);
 }
 
 void MokRemovalWizard::buildRemediationPage()
@@ -50,7 +41,6 @@ void MokRemovalWizard::buildRemediationPage()
     lblTitle->setStyleSheet("color: #e67e22; font-weight: bold; font-size: 13px;");
     layout->addWidget(lblTitle);
 
-    // 🔍 Visual Anchor: Set object name so we can update descriptor text strings dynamically
     QLabel *lblDesc = new QLabel(page);
     lblDesc->setObjectName("remediationDescriptorLabel");
     lblDesc->setWordWrap(true);
@@ -72,11 +62,13 @@ void MokRemovalWizard::buildRemediationPage()
     btnStartRemediation->setMinimumHeight(38);
     btnStartRemediation->setFont(QFont("", -1, QFont::Bold));
 
+    connect(btnStartRemediation, &QPushButton::clicked, this, &MokRemovalWizard::onRemediationActionRouteTriggered);
+
     btnLayout->addWidget(btnBack);
     btnLayout->addWidget(btnStartRemediation);
     layout->addLayout(btnLayout);
 
-    wizardStack->addWidget(page); // 🔍 FIXED: Stable addWidget structure to lock down index positions permanently
+    wizardStack->addWidget(page);
 }
 
 void MokRemovalWizard::buildPasswordAssignmentPage()
@@ -116,11 +108,6 @@ void MokRemovalWizard::buildPasswordAssignmentPage()
     QPushButton *btnBackToScan = new QPushButton("⬅️ Back to Scan", page);
     btnBackToScan->setMinimumHeight(38);
 
-    // =========================================================================
-    // 🔄 STACK NAVIGATION GAP RESOLVED
-    // ASSOCIATED CODE FILES: src/mokremovalwizard_init.cpp
-    // ROADMAP STEP: Maps backwards safely to absolute static Index 1
-    // =========================================================================
     connect(btnBackToScan, &QPushButton::clicked, this, [this]() { wizardStack->setCurrentIndex(1); });
 
     btnExecutePurge = new QPushButton("🗑️ Commit Key Removal Request", page);
@@ -128,26 +115,8 @@ void MokRemovalWizard::buildPasswordAssignmentPage()
     btnExecutePurge->setStyleSheet("background-color: #c0392b; color: #ffffff; font-weight: bold;");
 
     connect(btnExecutePurge, &QPushButton::clicked, this, [this]() {
-        QString pass = editResetPassword->text();
-        QString confirm = editResetConfirm->text();
-
-        editResetPassword->setStyleSheet("");
-        editResetConfirm->setStyleSheet("");
-
-        if (pass.isEmpty() || confirm.isEmpty()) {
-            editResetPassword->setStyleSheet("border: 1px solid #e74c3c;");
-            editResetConfirm->setStyleSheet("border: 1px solid #e74c3c;");
-            QMessageBox::warning(this, "Input Required", "<b>Please enter a temporary password.</b>");
-            return;
-        }
-
-        if (pass != confirm) {
-            editResetConfirm->setStyleSheet("border: 1px solid #e74c3c;");
-            QMessageBox::critical(this, "Mismatch Detected", "<b>The passwords do not match.</b><br>Please re-type your input.");
-            return;
-        }
-
-        this->executeMokNVRAMPurge();
+        if (editResetPassword->text().isEmpty() || editResetPassword->text() != editResetConfirm->text()) return;
+        this->executeMokNVRAMPurge(); // Defined in src/mokremovalwizard_executor.cpp
     });
 
     btnLayout->addWidget(btnBackToScan);

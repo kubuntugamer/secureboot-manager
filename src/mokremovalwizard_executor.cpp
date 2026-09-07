@@ -1,6 +1,6 @@
 #include "mokremovalwizard.h"
 
-// 🎨 QT UI CORE COMPONENTS: Resolves incomplete type compilation errors
+// Qt UI Core Components
 #include <QLineEdit>
 #include <QPushButton>
 #include <QTextBrowser>
@@ -21,7 +21,6 @@ void MokRemovalWizard::handleRemediationPipeline()
     if (affectedKernels.isEmpty()) return;
 
     btnStartRemediation->setEnabled(false);
-    btnCancelRemediation->setEnabled(false);
     logTerminal->clear();
     logTerminal->append("<span style='color: #3498db;'>[INFO] Requesting admin escalation proxy...</span>");
 
@@ -33,9 +32,10 @@ void MokRemovalWizard::unsignNextKernel()
 {
     if (processingKernelIndex >= affectedKernels.size()) {
         logTerminal->append("<br><b style='color: #2ecc71;'>✅ Success: All kernel dependencies have been successfully unsigned.</b>");
-        logTerminal->append("<span style='color: #3498db;'>Advancing to Phase 2: Firmware Deletion configuration...</span>");
+        logTerminal->append("<span style='color: #3498db;'>Advancing to Phase 3: Firmware Deletion configuration...</span>");
 
-        QTimer::singleShot(1200, this, [this]() { wizardStack->setCurrentIndex(1); });
+        // FIX: Advanced index pointer to 2 (Password Assignment Page) instead of looping back to 1
+        QTimer::singleShot(1200, this, [this]() { wizardStack->setCurrentIndex(2); });
         return;
     }
 
@@ -44,11 +44,11 @@ void MokRemovalWizard::unsignNextKernel()
 
     QProcess *stripProcess = new QProcess(this);
 
-    // Trap underlying engine channel errors (e.g. system binary crashes or permissions)
+    // Trap underlying engine channel errors safely without accessing non-existent widget pointers
     connect(stripProcess, &QProcess::errorOccurred, this, [this, currentKernel](QProcess::ProcessError error) {
         logTerminal->append(QString("<b style='color: #e74c3c;'>[CRITICAL] Local execution loop fault (%1) targeting:</b> %2")
         .arg(error).arg(currentKernel));
-        btnCancelRemediation->setEnabled(true);
+        btnStartRemediation->setEnabled(true);
     });
 
     connect(stripProcess, &QProcess::finished, this, [this, stripProcess, currentKernel](int exitCode, QProcess::ExitStatus status) {
@@ -69,7 +69,7 @@ void MokRemovalWizard::unsignNextKernel()
             } else {
                 logTerminal->append(QString("<b style='color: #e74c3c;'>[FATAL ERROR] Failed to unsign kernel profile:</b>\n%1").arg(errMsg.isEmpty() ? "Unknown sbattach sub-process failure" : errMsg));
             }
-            btnCancelRemediation->setEnabled(true);
+            btnStartRemediation->setEnabled(true);
         }
     });
 
@@ -81,24 +81,14 @@ void MokRemovalWizard::executeMokNVRAMPurge()
     QString pass = editResetPassword->text();
     QString confirm = editResetConfirm->text();
 
-    // =========================================================================
-    // 🔒 PIPELINE EXECUTION VERIFICATION
-    // ASSOCIATED CODE FILES: src/mokremovalwizard_init.cpp, src/mokremovalwizard_executor.cpp
-    // ROADMAP STEP: Keep barriers low. Rely entirely on Step 2 pre-flight verification checks.
-    // =========================================================================
     if (pass.isEmpty() || pass != confirm) {
-        return; // Silent bypass protection. Validation feedback is already handled by the UI fields.
+        return;
     }
 
     if (QMessageBox::question(this, "🔄 FINAL SECURITY CONFIRMATION",
         "Are you absolutely sure you want to write this deletion request into the NVRAM queue?",
         QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes) return;
 
-    // =========================================================================
-    // 🔓 SOVEREIGNTY SECURED: BREAK GLOBAL WIDGET LOCKOUT
-    // ASSOCIATED CODE FILES: src/mokremovalwizard_executor.cpp
-    // ROADMAP STEP: Target the action button instead of disabling the entire app window
-    // =========================================================================
     btnExecutePurge->setEnabled(false);
     btnExecutePurge->setText("⌛ Committing request to NVRAM...");
 
@@ -109,7 +99,6 @@ void MokRemovalWizard::executeMokNVRAMPurge()
 
     QString certPath = QString("%1/%2.der").arg(targetDir, baseName);
 
-    // Structure arguments properly so Polkit hands the token parsing arrays off cleanly to mokutil
     QStringList runArgs;
     runArgs << "mokutil";
     if (QFile::exists(certPath)) {
@@ -126,7 +115,6 @@ void MokRemovalWizard::executeMokNVRAMPurge()
     });
 
     connect(purgeProcess, &QProcess::finished, this, [this, purgeProcess](int exitCode, QProcess::ExitStatus status) {
-        // Restore interaction controls on the trigger element if process fails out
         btnExecutePurge->setEnabled(true);
         btnExecutePurge->setText("🗑️ Commit Key Removal Request");
 
