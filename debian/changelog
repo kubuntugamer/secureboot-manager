@@ -1,3 +1,10 @@
+secureboot-manager (0.1.0-9ubuntu6) resolute; urgency=medium
+
+  * Release stable C++17 core utility engine, dropping prototype UI
+    limits.
+
+ -- chazz <chasbigham@gmail.com>  Mon, 07 Sep 2026 01:13:28 -0500
+
 secureboot-manager (0.1.0-9ubuntu5) resolute; urgency=medium
 
   * Synchronized signing pipelines and forced strict sbverify cryptographic validation passes.
