@@ -3,11 +3,13 @@
 #include "abstractdiscoveryengine.h"
 #include "debiandiscoveryengine.h"
 #include "mokautomationbackend.h"
+
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QLineEdit>
+#include <QComboBox>
 #include <QPushButton>
 #include <QFileInfo>
+#include <QFileInfoList>
 #include <QDir>
 #include <QTimer>
 #include <QProcess>
@@ -15,18 +17,20 @@
 #include <QMessageBox>
 #include <QTextBrowser>
 #include <QLabel>
+#include <QVariant>
 #include <QRegularExpression>
+#include <QRegularExpressionMatch>
 
-MokSignerPage::MokSignerPage(QWidget *parent) : QWidget(parent)
+MokSignerPage::MokSignerPage(QWidget *parent)
+: QWidget(parent)
+, m_keyComboBox(nullptr)
 {
-    // ⚙️ SUBMODULE GROUP 3: Instantiate discovery components
     if (QFile::exists(QStringLiteral("/usr/bin/dpkg-query"))) {
         discoveryEngine = new DebianDiscoveryEngine(this);
     } else {
         return;
     }
 
-    // 🎨 BASELINE VIEWS: Paints the secure landing frame panel
     QVBoxLayout *initialLayout = new QVBoxLayout(this);
     initialLayout->setContentsMargins(30, 25, 30, 25);
     initialLayout->setSpacing(15);
@@ -51,14 +55,13 @@ MokSignerPage::MokSignerPage(QWidget *parent) : QWidget(parent)
     );
     initialLayout->addWidget(btnInitScan);
     initialLayout->addStretch();
-    // 📡 DATA SYNCHRONIZATION PIPELINE: Handles drawing active card entries when elevated scans complete
+
     connect(discoveryEngine, &AbstractDiscoveryEngine::discoveryFinished, this, [=](QStringList uNames, QStringList uPaths, QStringList sNames) {
         QString existingLogText;
         if (auto oldLog = this->findChild<QTextBrowser*>(QStringLiteral("signerLogTerminal"))) {
             existingLogText = oldLog->toPlainText();
         }
 
-        // 🧹 RENDERING PURGE: Wipe out old widgets cleanly before drawing active drive metrics
         QList<QWidget*> lingeringChildren = this->findChildren<QWidget*>();
         for (QWidget* child : lingeringChildren) {
             child->setParent(nullptr);
@@ -77,18 +80,43 @@ MokSignerPage::MokSignerPage(QWidget *parent) : QWidget(parent)
             delete this->layout();
         }
 
-        // 💎 FIXED PATH VECTOR MAPPING: Map accurate boot paths for verified images using live metrics
         QStringList resolvedSignedPaths;
         QDir bootDir(QStringLiteral("/boot"));
         for (const QString &signedName : sNames) {
             resolvedSignedPaths.append(bootDir.filePath(QStringLiteral("vmlinuz-") + signedName));
         }
 
-        // 🎨 SUBMODULE GROUP 2 CALL: Paint the dynamic column layouts based on genuine root data vectors
-        MokUiSigner::setupSigningPage(this, editSignTargetPath, editSignKeyPath, btnBrowseBinary, btnExecuteSignature,
+        QLineEdit *dummyLegacyLine = nullptr;
+        MokUiSigner::setupSigningPage(this, editSignTargetPath, dummyLegacyLine, btnBrowseBinary, btnExecuteSignature,
                                       uNames, uPaths, sNames, resolvedSignedPaths);
 
+        m_keyComboBox = new QComboBox(this);
+        m_keyComboBox->setMinimumWidth(350);
+        m_keyComboBox->setStyleSheet(
+            QStringLiteral(
+                "QComboBox {"
+                "  background-color: #1e272e; color: #ffffff; border: 1px solid #3daee9;"
+                "  padding: 8px; border-radius: 4px; font-family: monospace;"
+                "}"
+                "QComboBox:disabled { background-color: #2f3542; color: #747d8c; border: 1px solid #747d8c; }"
+            )
+        );
+
         if (auto mainLayout = qobject_cast<QVBoxLayout*>(this->layout())) {
+            QHBoxLayout *selectorLayout = new QHBoxLayout();
+            QLabel *selectorLabel = new QLabel(QStringLiteral("🔑 Selected Secure Boot Key Profile:"), this);
+            selectorLabel->setStyleSheet(QStringLiteral("color: #ffffff; font-weight: bold; font-size: 11px;"));
+
+            selectorLayout->addWidget(selectorLabel);
+            selectorLayout->addWidget(m_keyComboBox, 1);
+
+            int runIdx = mainLayout->indexOf(btnExecuteSignature);
+            if (runIdx != -1) {
+                mainLayout->insertLayout(runIdx, selectorLayout);
+            } else {
+                mainLayout->addLayout(selectorLayout);
+            }
+
             int idx = mainLayout->indexOf(btnExecuteSignature);
             if (idx != -1) {
                 mainLayout->removeWidget(btnExecuteSignature);
@@ -119,68 +147,192 @@ MokSignerPage::MokSignerPage(QWidget *parent) : QWidget(parent)
             }
         }
 
+        populateKeySelector();
+
         if (!existingLogText.isEmpty()) {
             if (auto newLog = this->findChild<QTextBrowser*>(QStringLiteral("signerLogTerminal"))) {
                 newLog->setPlainText(existingLogText);
             }
         }
 
-        // ⚡ HOOKS LINKAGE: Rebind signature and stripping execution paths back onto the structural buttons
         setupExecutionHook();
     });
 
-    // 🔒 SINGLE ELEVATED INITIALIZATION HOOK: Intercepts clicks to fire privilege pass sequence
     connect(btnInitScan, &QPushButton::clicked, this, [this, btnInitScan]() {
         btnInitScan->setEnabled(false);
         btnInitScan->setText(QStringLiteral("⏳ Awaiting System Privilege Authentication..."));
         qApp->processEvents();
-
-        // Trigger the internal partition scan thread loop
         this->triggerScan();
     });
+}
+QString MokSignerPage::extractCommonName(const QString &certPath)
+{
+    if (certPath.isEmpty() || !QFile::exists(certPath)) {
+        return QString();
+    }
+
+    QProcess process;
+    QString program = QStringLiteral("/usr/bin/openssl");
+    QStringList arguments;
+
+    // Standard x509 display configuration
+    arguments << QStringLiteral("x509")
+    << QStringLiteral("-in") << certPath
+    << QStringLiteral("-noout")
+    << QStringLiteral("-subject");
+
+    // Force binary DER decryption format mapping explicitly for matching extensions
+    if (certPath.endsWith(QStringLiteral(".der"), Qt::CaseInsensitive)) {
+        arguments << QStringLiteral("-inform") << QStringLiteral("DER");
+    } else {
+        arguments << QStringLiteral("-inform") << QStringLiteral("PEM");
+    }
+
+    process.start(program, arguments);
+    if (!process.waitForStarted(1500)) return QString();
+    if (!process.waitForFinished(3000)) return QString();
+
+    QString output = QString::fromUtf8(process.readAllStandardOutput()).trimmed();
+
+    // Capture standard x509 subject line attributes across variable styles
+    QRegularExpression cnRegex(QStringLiteral("(?:CN\\s*=\\s*|\\/CN\\s*=)([^/,\n]+)"));
+    QRegularExpressionMatch match = cnRegex.match(output);
+
+    if (match.hasMatch()) {
+        QString parsedName = match.captured(1).trimmed();
+
+        // Sanitize string data by wiping raw bounding text quotes
+        parsedName.remove(QStringLiteral("\""));
+        parsedName.remove(QStringLiteral("'"));
+
+        if (!parsedName.isEmpty()) {
+            return parsedName;
+        }
+    }
+
+    return QString();
+}
+
+
+void MokSignerPage::populateKeySelector()
+{
+    if (!m_keyComboBox) return;
+
+    m_keyComboBox->clear();
+    m_keyProfiles.clear();
+
+    QString homePath = QDir::homePath();
+    QStringList searchDirs = {
+        homePath + QStringLiteral("/secureboot-manager-keys/"),
+        QStringLiteral("/var/lib/shim-signed/mok/")
+    };
+
+    for (const QString &dirPath : searchDirs) {
+        QDir dir(dirPath);
+        if (!dir.exists()) continue;
+
+        QStringList filters = { QStringLiteral("*.priv"), QStringLiteral("*.key") };
+        QFileInfoList fileList = dir.entryInfoList(filters, QDir::Files | QDir::Readable);
+
+        for (const QFileInfo &fileInfo : fileList) {
+            QString keyPath = fileInfo.absoluteFilePath();
+            QString baseName = fileInfo.baseName();
+            QString certPath = findMatchingCertificate(dirPath, baseName);
+
+            KeyProfile profile;
+            profile.privateKeyPath = keyPath;
+            profile.certificatePath = certPath;
+            profile.displayName = baseName;
+            profile.originPath = dirPath;
+
+            QString resolvedTitle = extractCommonName(certPath);
+
+            if (resolvedTitle.isEmpty()) {
+                resolvedTitle = baseName;
+                resolvedTitle.replace(QStringLiteral("_"), QStringLiteral(" "));
+                resolvedTitle.replace(QStringLiteral("-"), QStringLiteral(" "));
+            }
+
+            QString displayText = resolvedTitle;
+            if (certPath.isEmpty()) {
+                displayText += QStringLiteral(" ⚠️ (Missing Certificate)");
+            } else {
+                if (dirPath.contains(QStringLiteral("/var/lib/"))) {
+                    displayText += QStringLiteral(" [System Default]");
+                } else {
+                    displayText += QStringLiteral(" [User Key]");
+                }
+            }
+
+            m_keyProfiles.append(profile);
+            m_keyComboBox->addItem(displayText, QVariant::fromValue(keyPath));
+        }
+    }
+
+    if (m_keyComboBox->count() == 0) {
+        m_keyComboBox->addItem(QStringLiteral("No keys found. Place profiles in ~/secureboot-manager-keys/"), QString());
+        m_keyComboBox->setEnabled(false);
+    } else {
+        m_keyComboBox->setEnabled(true);
+        for (int i = 0; i < m_keyComboBox->count(); ++i) {
+            QString itemText = m_keyComboBox->itemText(i);
+            if (itemText.contains(QStringLiteral("Master"), Qt::CaseInsensitive) ||
+                itemText.contains(QStringLiteral("Custom"), Qt::CaseInsensitive)) {
+                m_keyComboBox->setCurrentIndex(i);
+            break;
+                }
+        }
+
+        if (auto logNewTerminal = this->findChild<QTextBrowser*>(QStringLiteral("signerLogTerminal"))) {
+            QString initialKey = m_keyComboBox->currentData().toString();
+            logNewTerminal->append(QStringLiteral("💡 [SMART ASSIST]: Bound dynamic signing selector to: ") + initialKey);
+        }
+    }
+}
+
+QString MokSignerPage::findMatchingCertificate(const QString &dirPath, const QString &baseName)
+{
+    QStringList exactExtensions = { QStringLiteral(".pem"), QStringLiteral(".der"), QStringLiteral(".crt") };
+    for (const QString &ext : exactExtensions) {
+        QString fullCertPath = dirPath + baseName + ext;
+        if (QFileInfo::exists(fullCertPath)) return fullCertPath;
+    }
+    return QString();
 }
 
 void MokSignerPage::triggerScan()
 {
-    if (discoveryEngine) {
-        discoveryEngine->discoverKernels();
-    }
+    if (discoveryEngine) discoveryEngine->discoverKernels();
 }
 void MokSignerPage::setupExecutionHook()
 {
     if (!btnExecuteSignature) return;
 
-    // 🔐 SUBMODULE GROUP 4 INITIATION: Secure Boot signature injection payload connection
     btnExecuteSignature->disconnect();
     connect(btnExecuteSignature, &QPushButton::clicked, this, [this]() {
         QString targetBinary = this->property("selectedKernelPath").toString();
-        QString keyAsset = editSignKeyPath ? editSignKeyPath->text().trimmed() : QString();
 
-        if (targetBinary.isEmpty() || keyAsset.isEmpty()) {
+        if (!m_keyComboBox || m_keyComboBox->currentIndex() == -1) {
+            QMessageBox::warning(this, QStringLiteral("Selection Missing"), QStringLiteral("Please install or select a valid Secure Boot key profile first."));
+            return;
+        }
+
+        QString fullyResolvedKey = m_keyComboBox->currentData().toString();
+        if (targetBinary.isEmpty() || fullyResolvedKey.isEmpty()) {
             QMessageBox::warning(this, QStringLiteral("Selection Missing"), QStringLiteral("Please select a staged kernel card to sign first."));
             return;
         }
 
-        QString fullyResolvedKey = keyAsset;
-        if (fullyResolvedKey.startsWith(QStringLiteral("~"))) {
-            fullyResolvedKey.replace(0, 1, QDir::homePath());
+        int activeIdx = m_keyComboBox->currentIndex();
+        QString certAsset;
+        if (activeIdx >= 0 && activeIdx < m_keyProfiles.size()) {
+            certAsset = m_keyProfiles.at(activeIdx).certificatePath;
         }
 
-        // Auto-resolve certificate mapping extensions securely
-        QString certAsset = fullyResolvedKey;
-        if (certAsset.endsWith(QStringLiteral(".priv"))) {
-            certAsset.replace(QStringLiteral(".priv"), QStringLiteral(".pem"));
-        } else if (certAsset.endsWith(QStringLiteral(".key"))) {
-            certAsset.replace(QStringLiteral(".key"), QStringLiteral(".pem"));
-        }
-
-        // Handle path validation for certificates fallback (.der conversion fallback)
-        if (!QFile::exists(certAsset)) {
-            QString derFallback = fullyResolvedKey;
-            derFallback.replace(QRegularExpression(QStringLiteral("\\.(key|priv)$")), QStringLiteral(".der"));
-            if (QFile::exists(derFallback)) {
-                certAsset = derFallback;
-            }
+        if (certAsset.isEmpty() || !QFile::exists(certAsset)) {
+            QMessageBox::critical(this, QStringLiteral("Certificate Missing"),
+                                  QStringLiteral("The public validation certificate (.pem/.der/.crt) paired to this key could not be resolved."));
+            return;
         }
 
         QTextBrowser *logTerminal = this->findChild<QTextBrowser*>(QStringLiteral("signerLogTerminal"));
@@ -198,7 +350,6 @@ void MokSignerPage::setupExecutionHook()
         btnExecuteSignature->setText(QStringLiteral("⏳ Processing Atomic Signature Pipeline... Please Wait."));
         qApp->processEvents();
 
-        // Rule 1 Compliance: Run directly via token arrays, banning raw "sh -c" scripts entirely
         QProcess *sbSignWorker = new QProcess(qApp);
         QString program = QStringLiteral("/usr/bin/pkexec");
 
@@ -221,7 +372,6 @@ void MokSignerPage::setupExecutionHook()
                 if (!lines.isEmpty()) logTerminal->append(QStringLiteral("<font color='#e74c3c'>⚠️ ") + lines + QStringLiteral("</font>"));
             });
 
-                // FIXED CONNECT PARAMS: Cleared trailing context tokens to prevent template evaluation limits
                 connect(sbSignWorker, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
                         [this, sbSignWorker, btnExecuteUnsign, logTerminal](int exitCode, QProcess::ExitStatus status) {
 
@@ -231,7 +381,6 @@ void MokSignerPage::setupExecutionHook()
                             }
                             if (btnExecuteUnsign) btnExecuteUnsign->setEnabled(true);
 
-                            // Read log history safely to identify internal errors
                             QString logHistory = logTerminal ? logTerminal->toPlainText() : QString();
                             bool hasInternalErrors = logHistory.contains(QStringLiteral("error:")) ||
                             logHistory.contains(QStringLiteral("Can't load")) ||
@@ -250,15 +399,13 @@ void MokSignerPage::setupExecutionHook()
                             }
 
                             sbSignWorker->deleteLater();
-
-                            // Sanitize cache properties and refresh list widget elements
                             this->setProperty("selectedKernelPath", QString());
                             QTimer::singleShot(400, this, &MokSignerPage::triggerScan);
                         });
 
                 sbSignWorker->start(program, arguments);
     });
-    // ✂️ SUBMODULE GROUP 4 REVERSE INITIATION: Signature stripping pipeline connection
+
     QPushButton *btnExecuteUnsign = this->findChild<QPushButton*>(QStringLiteral("btnExecuteUnsign"));
     if (btnExecuteUnsign) {
         btnExecuteUnsign->disconnect();
@@ -270,7 +417,7 @@ void MokSignerPage::setupExecutionHook()
                 return;
             }
 
-            QPushButton *btnExecuteUnsign = this->findChild<QPushButton*>(QStringLiteral("btnExecuteUnsign"));
+            QPushButton *btnExecuteUnsignLocal = this->findChild<QPushButton*>(QStringLiteral("btnExecuteUnsign"));
             QTextBrowser *logTerminal = this->findChild<QTextBrowser*>(QStringLiteral("signerLogTerminal"));
 
             if (logTerminal) {
@@ -279,15 +426,13 @@ void MokSignerPage::setupExecutionHook()
                 logTerminal->append(QString("📂 [TARGET BINARY]: %1").arg(targetBinary));
             }
 
-            // Lock controls during execution to block double clicks
             if (btnExecuteSignature) btnExecuteSignature->setEnabled(false);
-            if (btnExecuteUnsign) {
-                btnExecuteUnsign->setEnabled(false);
-                btnExecuteUnsign->setText(QStringLiteral("⏳ Stripping Signature..."));
+            if (btnExecuteUnsignLocal) {
+                btnExecuteUnsignLocal->setEnabled(false);
+                btnExecuteUnsignLocal->setText(QStringLiteral("⏳ Stripping Signature..."));
             }
             qApp->processEvents();
 
-            // Run asynchronously via standard QProcess token streams (Rule 1 & Rule 2 compliant)
             QProcess *sbUnsignWorker = new QProcess(qApp);
             QString program = QStringLiteral("/usr/bin/pkexec");
 
@@ -306,14 +451,13 @@ void MokSignerPage::setupExecutionHook()
                     if (!lines.isEmpty()) logTerminal->append(QStringLiteral("<font color='#e74c3c'>⚠️ ") + lines + QStringLiteral("</font>"));
                 });
 
-                    // FIXED CONNECT PARAMS: Cleaned context tracking signature slots to bypass build blocks
                     connect(sbUnsignWorker, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
-                            [this, sbUnsignWorker, btnExecuteUnsign, logTerminal](int exitCode, QProcess::ExitStatus status) {
+                            [this, sbUnsignWorker, btnExecuteUnsignLocal, logTerminal](int exitCode, QProcess::ExitStatus status) {
 
                                 if (btnExecuteSignature) btnExecuteSignature->setEnabled(true);
-                                if (btnExecuteUnsign) {
-                                    btnExecuteUnsign->setEnabled(true);
-                                    btnExecuteUnsign->setText(QStringLiteral("Strip / Unsign Selected Binary"));
+                                if (btnExecuteUnsignLocal) {
+                                    btnExecuteUnsignLocal->setEnabled(true);
+                                    btnExecuteUnsignLocal->setText(QStringLiteral("Strip / Unsign Selected Binary"));
                                 }
 
                                 if (status == QProcess::NormalExit && exitCode == 0) {
@@ -329,8 +473,6 @@ void MokSignerPage::setupExecutionHook()
                                 }
 
                                 sbUnsignWorker->deleteLater();
-
-                                // Clean tracking metrics references and trigger scan redraw wait buffer
                                 this->setProperty("selectedKernelPath", QString());
                                 QTimer::singleShot(400, this, &MokSignerPage::triggerScan);
                             });
