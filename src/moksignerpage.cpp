@@ -292,7 +292,8 @@ void MokSignerPage::populateKeySelector()
 
 QString MokSignerPage::findMatchingCertificate(const QString &dirPath, const QString &baseName)
 {
-    QStringList exactExtensions = { QStringLiteral(".pem"), QStringLiteral(".der"), QStringLiteral(".crt") };
+    QStringList exactExtensions = { QStringLiteral(".pem"), QStringLiteral(".crt"), QStringLiteral(".der") };
+
     for (const QString &ext : exactExtensions) {
         QString fullCertPath = dirPath + baseName + ext;
         if (QFileInfo::exists(fullCertPath)) return fullCertPath;
@@ -391,12 +392,32 @@ void MokSignerPage::setupExecutionHook()
                                     logTerminal->append(QStringLiteral("<font color='#1dd1a1'>✨ [SUCCESS]: Signature token clean-injected successfully!</font>"));
                                 }
                                 QMessageBox::information(this, QStringLiteral("Signing Successful"), QStringLiteral("Secure Boot signatures successfully clean-injected."));
+
+                                // Automatically update GRUB right after a signature injection finishes safely
+                                // ⚡ LIVE STREAM HOOK: Route active GRUB terminal outputs straight to your UI log box
+                                if (logTerminal) {
+                                    logTerminal->append(QStringLiteral("<font color='#3daee9'>⚙️ [BOOTLOADER]: Initializing GRUB partition refresh... Awaiting polkit pass.</font>"));
+                                }
+
+                                QProcess *grubWorker = new QProcess(qApp);
+
+                                connect(grubWorker, &QProcess::readyReadStandardOutput, qApp, [grubWorker, logTerminal]() {
+                                    if (logTerminal) logTerminal->append(QString::fromUtf8(grubWorker->readAllStandardOutput()).trimmed());
+                                });
+                                    connect(grubWorker, &QProcess::readyReadStandardError, qApp, [grubWorker, logTerminal]() {
+                                        if (logTerminal) logTerminal->append(QStringLiteral("<font color='#e74c3c'>⚠️ </font>") + QString::fromUtf8(grubWorker->readAllStandardError()).trimmed());
+                                    });
+
+                                        grubWorker->start(QStringLiteral("/usr/bin/pkexec"), QStringList() << QStringLiteral("/usr/sbin/update-grub"));
+                                        grubWorker->waitForFinished(10000);
+
                             } else {
                                 if (logTerminal) {
                                     logTerminal->append(QStringLiteral("<font color='#e74c3c'>❌ [FAILURE]: Pipeline aborted due to underlying tool runtime failure.</font>"));
                                 }
                                 QMessageBox::critical(this, QStringLiteral("Signing Injection Failed"), QStringLiteral("The execution layer reported errors. Please check the logs above to ensure your key and certificate configurations are valid."));
                             }
+
 
                             sbSignWorker->deleteLater();
                             this->setProperty("selectedKernelPath", QString());
@@ -464,7 +485,7 @@ void MokSignerPage::setupExecutionHook()
                                     if (logTerminal) {
                                         logTerminal->append(QStringLiteral("<font color='#1dd1a1'>✨ [SUCCESS]: Signature block stripped clean from target image binary.</font>"));
                                     }
-                                    QMessageBox::information(this, QStringLiteral("Unsign Successful"), QStringLiteral("Secure Boot signature successfully removed from the kernel binary."));
+                                    (this, QStringLiteral("Unsign Successful"), QStringLiteral("Secure Boot signature successfully removed from the kernel binary."));
                                 } else {
                                     if (logTerminal) {
                                         logTerminal->append(QStringLiteral("<font color='#e74c3c'>❌ [FAILURE]: Signature separation execution aborted.</font>"));
